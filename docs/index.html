@@ -154,11 +154,38 @@
   /* ---------------------------------------------------------------- Hero */
   .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(28px, 5vw, 64px); align-items: center; padding-top: clamp(56px, 9vw, 104px); }
   .hero h1 { font-size: clamp(2.35rem, 4.6vw, 3.6rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.06; margin-top: 14px; }
-  .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 30px; }
-  .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-  .hero-alt { font-size: 0.85rem; color: var(--muted); }
+  .hero-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; margin-top: 30px; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .hero-alt { display: block; margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
   .hero-alt a { color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px; }
   .hero-alt a:hover { color: var(--text); }
+  .btn .chev { width: 14px; height: 14px; margin-left: -2px; opacity: 0.7; }
+
+  /* ---------------------------------------------------------------- Download-Auswahl */
+  .dl-group { position: relative; }
+  .dl-menu {
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+    width: max-content; min-width: 260px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 20px 50px -20px rgb(0 0 0 / 0.35);
+    padding: 6px;
+  }
+  .dl-menu.wide { min-width: 300px; }
+  .dl-tabs { display: flex; gap: 4px; padding: 4px 4px 8px; border-bottom: 1px solid var(--line-soft); margin-bottom: 6px; }
+  .dl-tab {
+    flex: 1; padding: 7px 0; border-radius: 8px; border: none; background: none;
+    color: var(--text-dim); font: 600 0.8rem var(--font-body); cursor: pointer;
+  }
+  .dl-tab:hover { background: var(--surface-2); }
+  .dl-tab[aria-selected="true"] { background: var(--surface-2); color: var(--text); }
+  .dl-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 10px 12px; border-radius: 9px; text-decoration: none; color: var(--text);
+  }
+  .dl-item:hover { background: var(--surface-2); }
+  .dl-item-name { display: block; font: 600 0.85rem var(--font-body); }
+  .dl-item-hint { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 1px; }
+  .dl-item-size { flex: none; font: 0.72rem var(--font-mono); color: var(--muted); }
 
   /* ---------------------------------------------------------------- App-Mockup */
   .mockup-stage { perspective: 1400px; }
@@ -270,12 +297,23 @@
     <h1>Doppelklick auf eine HTML-Datei.<br>Fertig ist dein <span class="accent-text">eigenes Programm.</span></h1>
     <p class="lede" style="margin-top:18px;">Ein HTML-Spiel, -Tool oder -Prototyp doppelklicken (oder „Öffnen mit“), und es startet sofort in seinem eigenen Fenster – ohne Adressleiste, ohne Tabs, ohne Browser drumherum. Alle so gestarteten Dateien landen nebenbei in einem Menü, falls du sie mal wiederfinden willst.</p>
     <div class="hero-actions">
-      <a id="primary-dl" class="btn primary" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-Setup-1.1.0.exe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-5-5m5 5 5-5"/><path d="M4 20h16"/></svg>
-        <span id="primary-dl-label">Für Windows herunterladen</span>
-      </a>
-      <span class="hero-alt" id="primary-dl-sub">Installer · Version 1.1.0 · <a href="#downloads">andere Optionen</a></span>
+      <div class="dl-group">
+        <button class="btn primary" id="dl-primary-btn" type="button" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-5-5m5 5 5-5"/><path d="M4 20h16"/></svg>
+          <span id="dl-primary-label">Für Windows</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="dl-menu" id="dl-primary-menu" hidden></div>
+      </div>
+      <div class="dl-group">
+        <button class="btn" id="dl-other-btn" type="button" aria-haspopup="true" aria-expanded="false">
+          Anderes System
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="dl-menu wide" id="dl-other-menu" hidden></div>
+      </div>
     </div>
+    <span class="hero-alt">Version 1.1.0 · <a href="#downloads">alle Downloads im Überblick</a></span>
     <div class="hero-meta">
       <span class="pill">Windows</span>
       <span class="pill">macOS</span>
@@ -512,22 +550,77 @@
       try { localStorage.setItem('theme', next); } catch (e) {}
     });
 
-    var assets = {
-      win:   { label: "Für Windows herunterladen", sub: "Installer · Version 1.1.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-Setup-1.1.0.exe" },
-      mac:   { label: "Für macOS herunterladen",    sub: "Apple Silicon · Version 1.1.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-mac-arm64.zip" },
-      linux: { label: "Für Linux herunterladen",    sub: ".tar.gz, portabel · Version 1.1.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-x64.tar.gz" }
+    // Ein Ort für alle Downloads - Hero-Buttons und die Übersicht weiter unten
+    // lesen beide von hier, statt Dateinamen doppelt zu pflegen.
+    var REL = "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/";
+    var catalog = {
+      win: { label: "Windows", formats: [
+        { name: "Installer", hint: "empfohlen · registriert „Öffnen mit“", size: "97 MB", url: REL + "HTML-Launcher-Setup-1.1.0.exe" },
+        { name: "Portable", hint: "keine Installation, keine Adminrechte", size: "97 MB", url: REL + "HTML-Launcher-1.1.0-portable.exe" }
+      ]},
+      linux: { label: "Linux", formats: [
+        { name: ".deb", hint: "Debian, Ubuntu & Ableger", size: "", url: REL + "HTML-Launcher-1.1.0-amd64.deb" },
+        { name: ".pacman", hint: "Arch Linux & Ableger", size: "", url: REL + "HTML-Launcher-1.1.0-x86_64.pacman" },
+        { name: ".tar.gz", hint: "portabel, jede Distribution", size: "", url: REL + "HTML-Launcher-1.1.0-x64.tar.gz" }
+      ]},
+      mac: { label: "macOS", formats: [
+        { name: "Apple Silicon", hint: "M1–M4", size: "", url: REL + "HTML-Launcher-1.1.0-mac-arm64.zip" },
+        { name: "Intel", hint: "", size: "", url: REL + "HTML-Launcher-1.1.0-mac-x64.zip" }
+      ]}
     };
     var ua = navigator.userAgent || "";
-    var os = /Mac/i.test(ua) ? "mac" : /Linux/i.test(ua) && !/Android/i.test(ua) ? "linux" : "win";
-    var pick = assets[os];
-    var link = document.getElementById("primary-dl");
-    var label = document.getElementById("primary-dl-label");
-    var sub = document.getElementById("primary-dl-sub");
-    if (link && pick) {
-      link.href = pick.url;
-      label.textContent = pick.label;
-      sub.innerHTML = pick.sub + ' · <a href="#downloads">andere Optionen</a>';
+    var detected = /Mac/i.test(ua) ? "mac" : /Linux/i.test(ua) && !/Android/i.test(ua) ? "linux" : "win";
+
+    function renderFormats(os) {
+      return catalog[os].formats.map(function (f) {
+        var sizeHtml = f.size ? '<span class="dl-item-size">' + f.size + '</span>' : '';
+        return '<a class="dl-item" href="' + f.url + '">' +
+          '<span><span class="dl-item-name">' + f.name + '</span>' +
+          (f.hint ? '<span class="dl-item-hint">' + f.hint + '</span>' : '') + '</span>' +
+          sizeHtml + '</a>';
+      }).join('');
     }
+
+    // Primärer Button: direkt die Formate des erkannten Systems.
+    document.getElementById('dl-primary-label').textContent = 'Für ' + catalog[detected].label;
+    document.getElementById('dl-primary-menu').innerHTML = renderFormats(detected);
+
+    // Zweiter Button: System erst über Reiter wählen, dann dessen Formate.
+    var otherMenu = document.getElementById('dl-other-menu');
+    function renderOtherMenu(activeOs) {
+      var tabs = ['win', 'linux', 'mac'].map(function (os) {
+        return '<button class="dl-tab" type="button" data-os="' + os + '" role="tab" aria-selected="' + (os === activeOs) + '">' + catalog[os].label + '</button>';
+      }).join('');
+      otherMenu.innerHTML = '<div class="dl-tabs" role="tablist">' + tabs + '</div><div class="dl-formats">' + renderFormats(activeOs) + '</div>';
+      otherMenu.querySelectorAll('.dl-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () { renderOtherMenu(tab.dataset.os); });
+      });
+    }
+    renderOtherMenu(detected);
+
+    // Dropdown-Verhalten: je ein Menü offen, Klick außerhalb oder Escape schließt.
+    function wireDropdown(buttonId, menu) {
+      var btn = document.getElementById(buttonId);
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var opening = menu.hidden;
+        closeAllMenus();
+        if (opening) { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+      });
+      return btn;
+    }
+    var primaryMenu = document.getElementById('dl-primary-menu');
+    var primaryBtn = wireDropdown('dl-primary-btn', primaryMenu);
+    var otherBtn = wireDropdown('dl-other-btn', otherMenu);
+    // Klicks innerhalb eines Menüs (z. B. auf einen Reiter) sollen es nicht
+    // über den document-Listener sofort wieder schließen.
+    [primaryMenu, otherMenu].forEach(function (m) { m.addEventListener('click', function (e) { e.stopPropagation(); }); });
+    function closeAllMenus() {
+      [document.getElementById('dl-primary-menu'), otherMenu].forEach(function (m) { m.hidden = true; });
+      [primaryBtn, otherBtn].forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    }
+    document.addEventListener('click', closeAllMenus);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAllMenus(); });
 
     var copyBtn = document.getElementById("copy-btn");
     var copyLabel = document.getElementById("copy-label");
