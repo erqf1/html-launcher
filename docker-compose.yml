@@ -1,0 +1,23 @@
+# Zwei unabhängige Dienste:
+#
+#   docker compose up web -d          Website unter http://localhost:8080
+#   docker compose run --rm build     baut Windows/Linux/macOS-Pakete nach ./dist und ./release
+#
+# "web" hostet nur die statische Seite aus ./docs (kein Node nötig, dieselbe Datei
+# läuft auch als GitHub Pages unter github.com/erqf1/html-launcher). "build" braucht
+# Internetzugang, um Electron pro Zielsystem herunterzuladen.
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docs:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  build:
+    build: .
+    entrypoint: ["node", "tools/build.js"]
+    volumes:
+      - ./dist:/app/dist
+      - ./release:/app/release

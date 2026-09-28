@@ -2,6 +2,8 @@
 
 Startet HTML-Dateien wie eigenständige Programme im Vollbild. Die Liste deiner Programme wird gespeichert und ist beim nächsten Start wieder da. Läuft unter Windows, Linux und macOS.
 
+**[Download-Seite](https://erqf1.github.io/html-launcher/)** · [Releases](https://github.com/erqf1/html-launcher/releases) · Lizenz: [Apache 2.0](LICENSE)
+
 ## Fertige Pakete (`release/`)
 
 | Datei | System | Start |
@@ -93,3 +95,14 @@ npm run icon                            # erzeugt assets/icon.png, .ico und .icn
 Gebaut werden kann von jedem System aus; Electron wird pro Ziel automatisch geladen. Ziele: `win`, `linux`, `mac` (Apple Silicon), `mac-intel`. `dist/` lässt sich jederzeit löschen.
 
 Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/` (Build, Archive, Icons).
+
+### Mit Docker
+
+Ohne Node oder Electron auf dem eigenen Rechner:
+
+```bash
+docker compose run --rm build    # baut alle drei Systeme nach ./dist und ./release
+docker compose up web -d         # Download-Seite unter http://localhost:8080
+```
+
+`web` ist derselbe statische Code wie unter [erqf1.github.io/html-launcher](https://erqf1.github.io/html-launcher/) – nützlich, um die Seite selbst zu hosten, etwa auf einem NAS.
