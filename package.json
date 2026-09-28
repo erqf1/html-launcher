@@ -1,29 +1,86 @@
 {
   "name": "html-launcher",
   "productName": "HTML Launcher",
-  "version": "1.0.0",
-  "description": "Startet HTML-Dateien wie eigenständige Programme im Vollbild.",
+  "version": "1.1.0",
+  "description": "Startet HTML-Dateien wie eigenständige Programme.",
   "main": "src/main.js",
   "private": true,
+  "desktopName": "html-launcher",
   "scripts": {
     "start": "electron .",
     "icon": "node tools/make-icon.js",
-    "build": "node tools/build.js",
-    "build:win": "node tools/build.js win",
-    "build:linux": "node tools/build.js linux",
-    "build:mac": "node tools/build.js mac mac-intel"
+    "build": "electron-builder -wlm",
+    "build:win": "electron-builder -w",
+    "build:linux": "electron-builder -l",
+    "build:mac": "electron-builder -m"
   },
   "devDependencies": {
-    "@electron/packager": "^20.3.0",
-    "electron": "^44.4.5"
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
   },
   "engines": {
     "node": ">=22.2"
   },
   "license": "Apache-2.0",
-  "author": "erqf1",
+  "author": {
+    "name": "erqf1",
+    "email": "erqf1@users.noreply.github.com"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/erqf1/html-launcher.git"
+  },
+  "build": {
+    "appId": "app.html-launcher",
+    "productName": "HTML Launcher",
+    "directories": { "output": "dist" },
+    "files": ["src/**/*", "assets/icon.png", "package.json"],
+    "afterPack": "tools/afterPack.js",
+    "publish": { "provider": "github", "owner": "erqf1", "repo": "html-launcher" },
+    "fileAssociations": [
+      { "ext": "html", "name": "HTML-Datei", "description": "HTML-Datei", "icon": "assets/icon.ico", "role": "Viewer" },
+      { "ext": "htm", "name": "HTM-Datei", "description": "HTM-Datei", "icon": "assets/icon.ico", "role": "Viewer" }
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "artifactName": "HTML-Launcher-Setup-${version}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "HTML-Launcher-${version}-portable.${ext}"
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "syncDesktopName": true,
+      "synopsis": "Startet HTML-Dateien wie eigenständige Programme",
+      "artifactName": "HTML-Launcher-${version}-${arch}.${ext}",
+      "target": [
+        { "target": "deb", "arch": ["x64"] },
+        { "target": "pacman", "arch": ["x64"] },
+        { "target": "tar.gz", "arch": ["x64"] }
+      ]
+    },
+    "deb": { "artifactName": "HTML-Launcher-${version}-amd64.${ext}" },
+    "pacman": { "artifactName": "HTML-Launcher-${version}-x86_64.${ext}" },
+    "mac": {
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.utilities",
+      "target": [
+        { "target": "zip", "arch": ["arm64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ],
+      "artifactName": "HTML-Launcher-${version}-mac-${arch}.${ext}"
+    }
   }
 }

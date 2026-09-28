@@ -83,8 +83,8 @@ function htmlArgs(argv) {
 
 /**
  * Wird die App mit HTML-Dateien aufgerufen (Doppelklick, "Öffnen mit", Datei auf die
- * .exe gezogen), sollen sie sich wie eigene Programme verhalten: sofort im Vollbild,
- * ohne den Umweg über das Menü. Das Menü kommt nur, wenn etwas nicht klappt.
+ * .exe gezogen), sollen sie sich wie eigene Programme verhalten: sofort im eigenen
+ * Fenster, ohne den Umweg über das Menü. Das Menü kommt nur, wenn etwas nicht klappt.
  */
 async function launchArgs(files) {
   const valid = [];
@@ -132,7 +132,8 @@ async function launch(id) {
 
     const win = new BrowserWindow({
       title: item.name,
-      fullscreen: true,
+      // Startet maximiert statt im echten Vollbild - fühlt sich wie ein normales
+      // Programmfenster an. Vollbild bleibt über F11 einen Tastendruck entfernt.
       show: false,
       backgroundColor: '#000000',
       autoHideMenuBar: true,
@@ -151,7 +152,10 @@ async function launch(id) {
     programWins.set(id, win);
     library.touch(id);
 
-    win.once('ready-to-show', () => win.show());
+    win.once('ready-to-show', () => {
+      win.maximize();
+      win.show();
+    });
     win.on('closed', () => {
       programWins.delete(id);
       broadcast();

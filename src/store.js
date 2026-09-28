@@ -92,9 +92,19 @@ class Library {
 
   _save() {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
+    const data = JSON.stringify({ version: 1, items: this.items }, null, 2);
     const tmp = `${this.file}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify({ version: 1, items: this.items }, null, 2));
-    fs.renameSync(tmp, this.file);
+    fs.writeFileSync(tmp, data);
+    try {
+      fs.renameSync(tmp, this.file);
+    } catch (err) {
+      // EXDEV: tmp und Zielordner liegen auf unterschiedlichen Laufwerken/Mounts
+      // (z. B. %APPDATA% per Gruppenrichtlinie umgeleitet) - rename() geht dann nicht
+      // atomar, ein Kopieren + Löschen tut es aber noch.
+      if (err.code !== 'EXDEV') throw err;
+      fs.writeFileSync(this.file, data);
+      fs.unlinkSync(tmp);
+    }
   }
 
   find(id) {

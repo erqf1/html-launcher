@@ -1,12 +1,49 @@
 <meta charset="utf-8">
 <title>HTML Launcher</title>
-<meta name="description" content="Startet HTML-Dateien wie eigenständige Programme im Vollbild. Kostenlos, quelloffen, für Windows, Linux und macOS.">
+<meta name="description" content="Startet HTML-Dateien wie eigenständige Programme. Kostenlos, quelloffen, für Windows, Linux und macOS.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* Bewusst einfarbig dunkel: die App selbst hat kein Licht-Thema für ihre eigene
-     Oberfläche im Vollbild, und diese Seite übernimmt genau deren Palette. */
+  /* Die App selbst ist dunkel; diese Seite übernimmt deren Akzentfarben (Indigo→Violett),
+     hat aber - anders als die App - ein echtes Hell/Dunkel-Umschalten (siehe .theme-switch). */
   :root {
+    color-scheme: light;
+    --bg: #f6f5f9;
+    --bg-nav: #f6f5f9dd;
+    --surface: #ffffff;
+    --surface-2: #eeecf4;
+    --line: #ddd9e6;
+    --line-soft: #e6e3ee;
+    --text: #1c1a22;
+    --text-dim: #55515f;
+    --muted: #837e8e;
+    --accent-1: #5457e5;
+    --accent-2: #9333ea;
+    --good: #16a34a;
+    --code-bg: #ffffff;
+    --font-display: "Outfit", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0a0b10;
+      --bg-nav: #0d0e15dd;
+      --surface: #14161f;
+      --surface-2: #1a1d29;
+      --line: #262a3a;
+      --line-soft: #1b1e2b;
+      --text: #edeff7;
+      --text-dim: #aab0c6;
+      --muted: #7d84a0;
+      --accent-1: #6d70f6;
+      --accent-2: #b660f5;
+      --good: #4ade80;
+      --code-bg: #0d0e15;
+    }
+  }
+  :root[data-theme="dark"] {
     color-scheme: dark;
     --bg: #0a0b10;
     --bg-nav: #0d0e15dd;
@@ -21,9 +58,6 @@
     --accent-2: #b660f5;
     --good: #4ade80;
     --code-bg: #0d0e15;
-    --font-display: "Outfit", system-ui, sans-serif;
-    --font-body: "IBM Plex Sans", system-ui, sans-serif;
-    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
   }
 
   * { box-sizing: border-box; }
@@ -72,19 +106,31 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line-soft);
   }
-  .brand { display: flex; align-items: center; gap: 10px; font: 650 1.05rem var(--font-display); }
-  .logo-mark {
-    width: 30px; height: 30px; border-radius: 9px; flex: none;
-    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-    display: grid; place-items: center;
-  }
-  .logo-mark svg { width: 14px; height: 14px; fill: #fff; }
-  .nav-links { display: flex; align-items: center; gap: 22px; font-size: 0.9rem; color: var(--text-dim); }
+  .brand { font: 650 1.05rem var(--font-display); }
+  .nav-links { display: flex; align-items: center; gap: 18px; font-size: 0.9rem; color: var(--text-dim); }
   .nav-links a:hover { color: var(--text); }
   .pill {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 5px 12px; border-radius: 999px;
     border: 1px solid var(--line); font: 500 0.78rem var(--font-mono); color: var(--text-dim);
+  }
+
+  /* Hell/Dunkel-Schalter: ein einfacher Kreis, der die Seite umschaltet */
+  .theme-switch {
+    display: grid; place-items: center;
+    width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--surface); color: var(--text-dim);
+    cursor: pointer;
+  }
+  .theme-switch:hover { border-color: var(--accent-1); color: var(--text); }
+  .theme-switch svg { width: 17px; height: 17px; }
+  /* Zeigt an, wohin ein Klick wechselt: Mond bei hellem, Sonne bei dunklem Aussehen. */
+  .theme-switch .sun { display: none; }
+  :root[data-theme="dark"] .theme-switch .moon { display: none; }
+  :root[data-theme="dark"] .theme-switch .sun { display: block; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .theme-switch .moon { display: none; }
+    :root:not([data-theme]) .theme-switch .sun { display: block; }
   }
 
   /* ---------------------------------------------------------------- Buttons */
@@ -97,11 +143,12 @@
   }
   .btn:hover { border-color: var(--accent-1); transform: translateY(-1px); }
   .btn.primary {
-    border: none; color: #0a0b10;
+    border: none; color: #fff;
     background: linear-gradient(100deg, var(--accent-1), var(--accent-2));
     box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--accent-1) 60%, transparent);
   }
   .btn.primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .btn.small { height: 38px; padding: 0 16px; font-size: 0.85rem; }
   .btn svg { width: 17px; height: 17px; }
 
   /* ---------------------------------------------------------------- Hero */
@@ -117,7 +164,7 @@
   .mockup-stage { perspective: 1400px; }
   .mockup {
     background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
-    overflow: hidden; box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.6);
+    overflow: hidden; box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.25);
     animation: rise 0.7s cubic-bezier(.2,.8,.2,1) both;
   }
   @keyframes rise { from { opacity: 0; transform: translateY(18px) rotateX(4deg); } to { opacity: 1; transform: translateY(0) rotateX(0); } }
@@ -126,7 +173,7 @@
   .mockup-top { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
   .mockup-search { flex: 1; height: 30px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); font: 0.78rem var(--font-body); display: flex; align-items: center; padding: 0 10px; gap: 6px; }
   .mockup-search svg { width: 13px; height: 13px; }
-  .mockup-add { flex: none; height: 30px; padding: 0 12px; border-radius: 8px; font: 600 0.75rem var(--font-body); color: #0a0b10; background: linear-gradient(100deg, var(--accent-1), var(--accent-2)); display: flex; align-items: center; }
+  .mockup-add { flex: none; height: 30px; padding: 0 12px; border-radius: 8px; font: 600 0.75rem var(--font-body); color: #fff; background: linear-gradient(100deg, var(--accent-1), var(--accent-2)); display: flex; align-items: center; }
   .mockup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
   .mockup-card { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 11px; border: 1px solid var(--line-soft); background: var(--surface-2); }
   .mockup-tile { width: 34px; height: 34px; border-radius: 9px; flex: none; display: grid; place-items: center; color: #fff; font: 700 0.85rem var(--font-display); background: linear-gradient(135deg, hsl(var(--h) 75% 63%), hsl(calc(var(--h) + 40) 75% 48%)); }
@@ -149,12 +196,18 @@
   .feature p { color: var(--text-dim); font-size: 0.9rem; margin: 8px 0 0; }
 
   /* ---------------------------------------------------------------- Downloads */
-  .downloads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 36px; }
-  .dl-card { display: flex; flex-direction: column; gap: 14px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-  .dl-card svg { width: 26px; height: 26px; color: var(--text-dim); }
-  .dl-card h3 { font-size: 1rem; }
-  .dl-card .sub { color: var(--muted); font: 0.8rem var(--font-mono); }
-  .dl-card .btn { margin-top: auto; width: 100%; }
+  .platforms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+  .platform { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
+  .platform-head { display: flex; align-items: center; gap: 10px; padding: 18px 20px; border-bottom: 1px solid var(--line-soft); }
+  .platform-head svg { width: 22px; height: 22px; color: var(--text-dim); }
+  .platform-head h3 { font-size: 1.05rem; }
+  .formats { display: flex; flex-direction: column; }
+  .format { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
+  .format:last-child { border-bottom: none; }
+  .format-info { flex: 1; min-width: 0; }
+  .format-name { font: 600 0.88rem var(--font-body); }
+  .format-hint { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+  .format-hint .mono { font-size: 0.76rem; }
   .dl-note { margin-top: 18px; color: var(--muted); font-size: 0.85rem; }
   .dl-note a { color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px; }
 
@@ -169,7 +222,7 @@
   .term-copy svg { width: 12px; height: 12px; }
   .term pre { margin: 0; padding: 16px; font: 0.85rem/1.7 var(--font-mono); overflow-x: auto; }
   .term .c1 { color: var(--muted); }
-  .term .c2 { color: #7ee787; }
+  .term .c2 { color: var(--good); }
 
   /* ---------------------------------------------------------------- Footer */
   footer { border-top: 1px solid var(--line-soft); padding-block: 32px; margin-top: 20px; }
@@ -181,12 +234,11 @@
   @media (max-width: 880px) {
     .hero { grid-template-columns: 1fr; padding-top: 44px; }
     .steps { grid-template-columns: 1fr; }
-    .downloads { grid-template-columns: 1fr 1fr; }
+    .platforms { grid-template-columns: 1fr; }
     .dev-grid { grid-template-columns: 1fr; }
     .nav-links span.pill { display: none; }
   }
   @media (max-width: 520px) {
-    .downloads { grid-template-columns: 1fr; }
     .mockup-grid { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -195,16 +247,17 @@
 </style>
 
 <nav class="wrap">
-  <div class="brand">
-    <span class="logo-mark"><svg viewBox="0 0 24 24"><path d="M8 5.5v13L19 12z"/></svg></span>
-    HTML Launcher
-  </div>
+  <div class="brand">HTML Launcher</div>
   <div class="nav-links">
     <a href="#downloads">Download</a>
     <a href="#features">Funktionen</a>
     <a href="#developers">Quellcode</a>
     <span class="pill">Apache 2.0</span>
-    <a class="btn" href="https://github.com/erqf1/html-launcher" style="height:36px;padding:0 14px;">
+    <button class="theme-switch" id="theme-switch" type="button" aria-label="Farbschema umschalten" title="Hell/Dunkel umschalten">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+    <a class="btn small" href="https://github.com/erqf1/html-launcher">
       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.5 0-.24-.01-.87-.01-1.71-2.78.62-3.37-1.37-3.37-1.37-.46-1.2-1.11-1.52-1.11-1.52-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.57 2.34 1.11 2.91.85.09-.67.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.72 0 0 .84-.28 2.75 1.05a9.29 9.29 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.46.1 2.72.64.72 1.03 1.63 1.03 2.75 0 3.94-2.35 4.8-4.58 5.06.36.32.68.95.68 1.92 0 1.39-.01 2.51-.01 2.85 0 .28.18.61.69.5A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
       GitHub
     </a>
@@ -214,20 +267,20 @@
 <header class="hero wrap">
   <div>
     <span class="eyebrow">Kostenlos · quelloffen · Apache-2.0</span>
-    <h1>Deine HTML-Dateien,<br>endlich <span class="accent-text">echte Programme.</span></h1>
-    <p class="lede" style="margin-top:18px;">Ein Menü für alle deine HTML-Spiele, -Tools und -Prototypen. Ein Klick, und sie laufen im Vollbild – ohne Adressleiste, ohne Tabs, ohne Browser drumherum.</p>
+    <h1>Doppelklick auf eine HTML-Datei.<br>Fertig ist dein <span class="accent-text">eigenes Programm.</span></h1>
+    <p class="lede" style="margin-top:18px;">Ein HTML-Spiel, -Tool oder -Prototyp doppelklicken (oder „Öffnen mit“), und es startet sofort in seinem eigenen Fenster – ohne Adressleiste, ohne Tabs, ohne Browser drumherum. Alle so gestarteten Dateien landen nebenbei in einem Menü, falls du sie mal wiederfinden willst.</p>
     <div class="hero-actions">
-      <a id="primary-dl" class="btn primary" href="https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-win.zip">
+      <a id="primary-dl" class="btn primary" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-Setup-1.1.0.exe">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-5-5m5 5 5-5"/><path d="M4 20h16"/></svg>
         <span id="primary-dl-label">Für Windows herunterladen</span>
       </a>
-      <span class="hero-alt" id="primary-dl-sub">139&nbsp;MB · Version 1.0.0 · <a href="#downloads">andere Systeme</a></span>
+      <span class="hero-alt" id="primary-dl-sub">Installer · Version 1.1.0 · <a href="#downloads">andere Optionen</a></span>
     </div>
     <div class="hero-meta">
       <span class="pill">Windows</span>
       <span class="pill">macOS</span>
       <span class="pill">Linux</span>
-      <span class="pill">Ohne Installation</span>
+      <span class="pill">Installer &amp; portabel</span>
     </div>
   </div>
 
@@ -262,22 +315,22 @@
 
 <section id="how" class="wrap">
   <span class="eyebrow">So funktioniert's</span>
-  <h2 style="font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:700; margin-top:10px;">Vom Ordner voller HTML-Dateien zum Startmenü</h2>
+  <h2 style="font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:700; margin-top:10px;">Doppelklick, fertig</h2>
   <div class="steps">
     <div class="step">
       <span class="step-num">01</span>
-      <h3>Hinzufügen</h3>
-      <p>Datei auswählen oder ins Fenster ziehen. Der Name kommt aus dem <code>&lt;title&gt;</code> der Seite, lässt sich aber jederzeit ändern.</p>
+      <h3>Doppelklicken</h3>
+      <p>Datei doppelklicken oder per „Öffnen mit“ starten (nach der Installation steht HTML Launcher dort zur Auswahl) – sie öffnet sofort in ihrem eigenen Fenster.</p>
     </div>
     <div class="step">
       <span class="step-num">02</span>
       <h3>Merken</h3>
-      <p>Die Liste bleibt gespeichert – auch nach einem Neustart. Jedes Programm behält seinen eigenen <code>localStorage</code>, unabhängig von den anderen.</p>
+      <p>Ganz nebenbei landet die Datei in einer Liste, die auch einen Neustart übersteht. Jedes Programm behält dabei seinen eigenen <code>localStorage</code>.</p>
     </div>
     <div class="step">
       <span class="step-num">03</span>
-      <h3>Starten</h3>
-      <p>Klick auf die Karte, oder direkt die Datei doppelklicken – beides öffnet sofort im Vollbild, ganz ohne Browser-Chrome.</p>
+      <h3>Übersicht bei Bedarf</h3>
+      <p>HTML Launcher selbst öffnen (ohne Datei) zeigt das Menü mit allem, was du je gestartet hast – zum erneuten Starten, Umbenennen oder Entfernen.</p>
     </div>
   </div>
 </section>
@@ -289,12 +342,12 @@
     <div class="feature">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
       <h3>Doppelklick startet direkt</h3>
-      <p>Eine Datei per „Öffnen mit“ starten, öffnet sie sofort im Vollbild – kein Menü im Weg. Nur das Programm selbst öffnen zeigt die Übersicht.</p>
+      <p>Eine HTML-Datei doppelklicken oder per „Öffnen mit“ starten, öffnet sie sofort – kein Menü im Weg. Nur das Programm HTML Launcher selbst öffnen zeigt die Übersicht.</p>
     </div>
     <div class="feature">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
-      <h3>Echtes Vollbild</h3>
-      <p>F11 schaltet um, Strg+W beendet, F5 lädt neu, F12 öffnet die Entwicklertools. Esc bleibt bewusst dem Programm überlassen, für Pausemenüs.</p>
+      <h3>Vollbild auf Wunsch</h3>
+      <p>Startet standardmäßig als normales, maximiertes Fenster. F11 schaltet ins echte Vollbild, Strg+W beendet, F5 lädt neu. Esc bleibt bewusst dem Programm überlassen, für Pausemenüs.</p>
     </div>
     <div class="feature">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8V6a2 2 0 0 0-2-2h-2M3 16v2a2 2 0 0 0 2 2h2M3 8V6a2 2 0 0 1 2-2h2M21 16v2a2 2 0 0 1-2 2h-2"/></svg>
@@ -304,12 +357,12 @@
     <div class="feature">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       <h3>Schnell gestartet</h3>
-      <p>Rund 230&nbsp;ms bis zum ersten Fenster. Der eigentliche Code der App ist 41&nbsp;KB – der Rest ist die Chromium-Engine, die WebGL und WebGPU mitbringt.</p>
+      <p>Rund 230&nbsp;ms bis zum ersten Fenster. Der eigentliche Code der App ist rund 40&nbsp;KB – der Rest ist die Chromium-Engine, die WebGL und WebGPU mitbringt.</p>
     </div>
     <div class="feature">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>
-      <h3>Windows, Linux, macOS</h3>
-      <p>Gleiches Verhalten auf allen drei Systemen, aus demselben Quellcode gebaut. Keine Installation, keine Registry-Einträge.</p>
+      <h3>Installer oder portabel</h3>
+      <p>Windows und Linux gibt es beide Wege: ein Installer, der HTML Launcher bei „Öffnen mit“ einträgt, oder eine Version ohne Installation zum Mitnehmen.</p>
     </div>
     <div class="feature">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 3 7v6c0 5 4 8.5 9 9 5-.5 9-4 9-9V7z"/></svg>
@@ -321,35 +374,86 @@
 
 <section id="downloads" class="wrap">
   <span class="eyebrow">Herunterladen</span>
-  <h2 style="font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:700; margin-top:10px;">Version 1.0.0</h2>
-  <p class="lede" style="margin-top:8px;">Entpacken, ausführen, fertig. Kein Installer, keine Adminrechte nötig – der Ordner lässt sich frei verschieben.</p>
-  <div class="downloads">
-    <div class="dl-card">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h8V4H3zM13 12h8V4h-8zM3 20h8v-6H3zM13 20h8v-6h-8z"/></svg>
-      <h3>Windows</h3>
-      <div class="sub">win.zip · 139&nbsp;MB · x64</div>
-      <a class="btn" href="https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-win.zip">Herunterladen</a>
+  <h2 style="font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:700; margin-top:10px;">Version 1.1.0</h2>
+  <p class="lede" style="margin-top:8px;">Für Windows und Linux gibt es einen Installer (trägt HTML Launcher bei „Öffnen mit“ ein) und eine portable Version ohne Installation. macOS ist als App-Bundle immer portabel.</p>
+  <div class="platforms">
+    <div class="platform">
+      <div class="platform-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h8V4H3zM13 12h8V4h-8zM3 20h8v-6H3zM13 20h8v-6h-8z"/></svg>
+        <h3>Windows</h3>
+      </div>
+      <div class="formats">
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">Installer <span style="color:var(--accent-2)">· empfohlen</span></div>
+            <div class="format-hint">Trägt HTML Launcher bei „Öffnen mit“ ein · <span class="mono">Setup.exe · 97&nbsp;MB</span></div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-Setup-1.1.0.exe">Laden</a>
+        </div>
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">Portable</div>
+            <div class="format-hint">Keine Installation, keine Adminrechte · <span class="mono">.exe · 97&nbsp;MB</span></div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-portable.exe">Laden</a>
+        </div>
+      </div>
     </div>
-    <div class="dl-card">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a4 4 0 0 1 4 4v3l3 5-1 4H6l-1-4 3-5V6a4 4 0 0 1 4-4Z"/><path d="M8 20c0 1 1.5 2 4 2s4-1 4-2"/></svg>
-      <h3>Linux</h3>
-      <div class="sub">linux.tar.gz · 116&nbsp;MB · x64</div>
-      <a class="btn" href="https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-linux.tar.gz">Herunterladen</a>
+
+    <div class="platform">
+      <div class="platform-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a4 4 0 0 1 4 4v3l3 5-1 4H6l-1-4 3-5V6a4 4 0 0 1 4-4Z"/><path d="M8 20c0 1 1.5 2 4 2s4-1 4-2"/></svg>
+        <h3>Linux</h3>
+      </div>
+      <div class="formats">
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">.deb</div>
+            <div class="format-hint">Debian, Ubuntu &amp; Ableger</div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-amd64.deb">Laden</a>
+        </div>
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">.pacman</div>
+            <div class="format-hint">Arch Linux &amp; Ableger</div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-x86_64.pacman">Laden</a>
+        </div>
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">.tar.gz</div>
+            <div class="format-hint">Portabel, jede Distribution</div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-x64.tar.gz">Laden</a>
+        </div>
+      </div>
     </div>
-    <div class="dl-card">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20c-4.4 0-8-3.6-8-8a8 8 0 0 1 8-8m0 16a8 8 0 0 0 8-8 8 8 0 0 0-8-8m0 16V4"/></svg>
-      <h3>macOS</h3>
-      <div class="sub">mac.tar.gz · 115&nbsp;MB · Apple Silicon</div>
-      <a class="btn" href="https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-mac.tar.gz">Herunterladen</a>
-    </div>
-    <div class="dl-card">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20c-4.4 0-8-3.6-8-8a8 8 0 0 1 8-8m0 16a8 8 0 0 0 8-8 8 8 0 0 0-8-8m0 16V4"/></svg>
-      <h3>macOS <span style="color:var(--muted); font-weight:500;">Intel</span></h3>
-      <div class="sub">mac-intel.tar.gz · 117&nbsp;MB</div>
-      <a class="btn" href="https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-mac-intel.tar.gz">Herunterladen</a>
+
+    <div class="platform">
+      <div class="platform-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20c-4.4 0-8-3.6-8-8a8 8 0 0 1 8-8m0 16a8 8 0 0 0 8-8 8 8 0 0 0-8-8m0 16V4"/></svg>
+        <h3>macOS</h3>
+      </div>
+      <div class="formats">
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">Apple Silicon</div>
+            <div class="format-hint">M1–M4 · <span class="mono">.zip</span></div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-mac-arm64.zip">Laden</a>
+        </div>
+        <div class="format">
+          <div class="format-info">
+            <div class="format-name">Intel</div>
+            <div class="format-hint"><span class="mono">.zip</span></div>
+          </div>
+          <a class="btn small" href="https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-mac-x64.zip">Laden</a>
+        </div>
+      </div>
     </div>
   </div>
-  <p class="dl-note">macOS ist ungetestet und unsigniert – nach dem Entpacken einmalig <code>xattr -cr HTML-Launcher.app</code> ausführen. Alle Versionen, Prüfsummen und Änderungen: <a href="https://github.com/erqf1/html-launcher/releases">Releases auf GitHub</a>.</p>
+  <p class="dl-note">macOS ist unsigniert – nach dem Entpacken einmalig <code>xattr -cr "HTML Launcher.app"</code> ausführen. Alle Versionen, Prüfsummen und Änderungen: <a href="https://github.com/erqf1/html-launcher/releases">Releases auf GitHub</a>.</p>
 </section>
 
 <section id="developers" class="wrap">
@@ -357,7 +461,7 @@
     <div>
       <span class="eyebrow">Für Entwickler</span>
       <h2 style="font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:700; margin-top:10px;">Selbst bauen, in einem Befehl</h2>
-      <p class="lede" style="margin-top:14px;">Keine nativen Abhängigkeiten – <code>@electron/packager</code> kopiert nur vorgefertigte Electron-Binaries. Das funktioniert auch für alle drei Systeme aus einem Linux-Container heraus, ganz ohne Node auf dem Host.</p>
+      <p class="lede" style="margin-top:14px;"><code>electron-builder</code> erzeugt Installer, portable Version, .deb und .pacman aus demselben Quellcode. Windows- und macOS-Pakete baut eine GitHub-Action auf echten Runnern; .deb/.pacman lassen sich lokal auch per Docker bauen (das Linux-Werkzeug <code>fpm</code> braucht einen Linux-Unterbau).</p>
       <a class="btn" style="margin-top:22px;" href="https://github.com/erqf1/html-launcher">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18c-4.5 1.5-4.5-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.6 1.9 5.5 2.2 5.5 2.2a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.1 8.6c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V20"/></svg>
         Quellcode auf GitHub
@@ -371,12 +475,12 @@
           <span id="copy-label">Kopieren</span>
         </button>
       </div>
-      <pre id="clone-cmd"><span class="c1"># bauen ohne Docker</span>
+      <pre id="clone-cmd"><span class="c1"># bauen ohne Docker (Windows/macOS)</span>
 <span class="c2">git</span> clone https://github.com/erqf1/html-launcher.git
 <span class="c2">cd</span> html-launcher &amp;&amp; npm install
-<span class="c2">npm</span> run build
+<span class="c2">npm</span> run build:win
 
-<span class="c1"># oder per Docker, ganz ohne Node lokal</span>
+<span class="c1"># .deb/.pacman per Docker, ganz ohne Node lokal</span>
 <span class="c2">docker</span> compose run --rm build</pre>
     </div>
   </div>
@@ -396,10 +500,22 @@
 
 <script>
   (function () {
+    // Hell/Dunkel: merkt sich eine explizite Wahl, folgt sonst dem System.
+    var root = document.documentElement;
+    var stored = null;
+    try { stored = localStorage.getItem('theme'); } catch (e) {}
+    if (stored === 'light' || stored === 'dark') root.setAttribute('data-theme', stored);
+    document.getElementById('theme-switch').addEventListener('click', function () {
+      var current = getComputedStyle(root).colorScheme === 'dark' ? 'dark' : 'light';
+      var next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+
     var assets = {
-      win:   { label: "Für Windows herunterladen",  sub: "139 MB · Version 1.0.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-win.zip" },
-      mac:   { label: "Für macOS herunterladen",     sub: "115 MB · Apple Silicon · Version 1.0.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-mac.tar.gz" },
-      linux: { label: "Für Linux herunterladen",     sub: "116 MB · Version 1.0.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.0.0/HTML-Launcher-1.0.0-linux.tar.gz" }
+      win:   { label: "Für Windows herunterladen", sub: "Installer · Version 1.1.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-Setup-1.1.0.exe" },
+      mac:   { label: "Für macOS herunterladen",    sub: "Apple Silicon · Version 1.1.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-mac-arm64.zip" },
+      linux: { label: "Für Linux herunterladen",    sub: ".tar.gz, portabel · Version 1.1.0", url: "https://github.com/erqf1/html-launcher/releases/download/v1.1.0/HTML-Launcher-1.1.0-x64.tar.gz" }
     };
     var ua = navigator.userAgent || "";
     var os = /Mac/i.test(ua) ? "mac" : /Linux/i.test(ua) && !/Android/i.test(ua) ? "linux" : "win";
@@ -410,7 +526,7 @@
     if (link && pick) {
       link.href = pick.url;
       label.textContent = pick.label;
-      sub.innerHTML = pick.sub + ' · <a href="#downloads">andere Systeme</a>';
+      sub.innerHTML = pick.sub + ' · <a href="#downloads">andere Optionen</a>';
     }
 
     var copyBtn = document.getElementById("copy-btn");

@@ -1,11 +1,13 @@
 # Zwei unabhängige Dienste:
 #
 #   docker compose up web -d          Website unter http://localhost:8080
-#   docker compose run --rm build     baut Windows/Linux/macOS-Pakete nach ./dist und ./release
+#   docker compose run --rm build     baut .deb/.pacman/.tar.gz nach ./dist
 #
 # "web" hostet nur die statische Seite aus ./docs (kein Node nötig, dieselbe Datei
-# läuft auch als GitHub Pages unter github.com/erqf1/html-launcher). "build" braucht
-# Internetzugang, um Electron pro Zielsystem herunterzuladen.
+# läuft auch als GitHub Pages unter github.com/erqf1/html-launcher). "build" ist
+# extra für Linux: das dafür nötige Werkzeug "fpm" gibt es nur für Linux/macOS,
+# ein Container ist hier der einfachste Weg, es trotzdem von Windows aus zu bauen.
+# Windows- und macOS-Pakete entstehen über GitHub Actions (.github/workflows/release.yml).
 services:
   web:
     image: nginx:alpine
@@ -17,7 +19,5 @@ services:
 
   build:
     build: .
-    entrypoint: ["node", "tools/build.js"]
     volumes:
       - ./dist:/app/dist
-      - ./release:/app/release
