@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML Launcher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="8" fill="url(#lg)"/>
+          <path d="M12.2 9.4v13.2L23 16z" fill="#fff"/>
+        </svg>
+        <h1>HTML Launcher</h1>
+      </div>
+
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="search" placeholder="Programme suchen…" autocomplete="off" spellcheck="false" aria-label="Programme suchen">
+      </label>
+
+      <button id="add" class="btn primary" type="button" title="HTML-Dateien hinzufügen (Strg+O)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        HTML hinzufügen
+      </button>
+    </header>
+
+    <main>
+      <div id="count" class="count" hidden></div>
+      <div id="grid" class="grid"></div>
+
+      <section id="empty" class="empty" hidden>
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m10.5 12.5-1.5 1.5 1.5 1.5M13.5 12.5l1.5 1.5-1.5 1.5"/></svg>
+        </div>
+        <h2>Noch keine Programme</h2>
+        <p>Füge HTML-Dateien hinzu. Der Launcher merkt sie sich und startet sie jederzeit im Vollbild.</p>
+        <button id="empty-add" class="btn primary large" type="button">HTML-Dateien auswählen</button>
+        <p class="sub">oder Dateien einfach hierher ziehen</p>
+      </section>
+
+      <section id="nomatch" class="empty compact" hidden>
+        <h2>Keine Treffer</h2>
+        <p>Für diese Suche gibt es kein passendes Programm.</p>
+      </section>
+    </main>
+
+    <footer class="hint">
+      Im Programm:
+      <span><kbd>F11</kbd> Vollbild umschalten</span>
+      <span><kbd data-mod>Strg</kbd>+<kbd>W</kbd> beenden</span>
+      <span><kbd>F5</kbd> neu laden</span>
+      <span><kbd>F12</kbd> Entwicklertools</span>
+    </footer>
+  </div>
+
+  <div id="drop" class="drop" hidden>
+    <div>Zum Hinzufügen loslassen</div>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <dialog id="modal" class="modal">
+    <form method="dialog" id="modal-form">
+      <h2 id="modal-title"></h2>
+      <p id="modal-text"></p>
+      <input id="modal-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" hidden>
+      <div class="modal-actions">
+        <button class="btn" value="cancel" type="submit" formnovalidate>Abbrechen</button>
+        <button id="modal-ok" class="btn primary" value="ok" type="submit"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

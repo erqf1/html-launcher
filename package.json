@@ -1,0 +1,29 @@
+{
+  "name": "html-launcher",
+  "productName": "HTML Launcher",
+  "version": "1.0.0",
+  "description": "Startet HTML-Dateien wie eigenständige Programme im Vollbild.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "icon": "node tools/make-icon.js",
+    "build": "node tools/build.js",
+    "build:win": "node tools/build.js win",
+    "build:linux": "node tools/build.js linux",
+    "build:mac": "node tools/build.js mac mac-intel"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.4.5"
+  },
+  "engines": {
+    "node": ">=22.2"
+  },
+  "license": "Apache-2.0",
+  "author": "erqf1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erqf1/html-launcher.git"
+  }
+}
