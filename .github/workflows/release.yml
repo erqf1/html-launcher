@@ -8,6 +8,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write # zum Hochladen der Pakete ans GitHub-Release
+
 jobs:
   build:
     strategy:
