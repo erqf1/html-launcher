@@ -2,7 +2,7 @@
 
 Doppelklick auf eine HTML-Datei, und sie läuft wie ein eigenes Programm – in ihrem eigenen Fenster, ohne Adressleiste, ohne Tabs, ohne Browser drumherum. Alle so gestarteten Dateien landen nebenbei in einem Menü, falls du sie mal wiederfinden willst. Läuft unter Windows, Linux und macOS.
 
-**[Download-Seite](https://erqf1.github.io/html-launcher/)** · [Releases](https://github.com/erqf1/html-launcher/releases) · Lizenz: [Apache 2.0](LICENSE)
+**[Releases](https://github.com/erqf1/html-launcher/releases)** · Lizenz: [Apache 2.0](LICENSE)
 
 ## Fertige Pakete
 
@@ -92,7 +92,7 @@ docker compose run --rm build    # .deb/.pacman/.tar.gz, auch von Windows aus (L
 docker compose up web -d         # Download-Seite unter http://localhost:8080
 ```
 
-`web` ist derselbe statische Code wie unter [erqf1.github.io/html-launcher](https://erqf1.github.io/html-launcher/) – nützlich, um die Seite selbst zu hosten, etwa auf einem NAS.
+`web` hostet die Download-Seite aus dem lokalen `docs/`-Ordner (nicht Teil dieses Repos, siehe `.gitignore`) – nützlich, um sie selbst zu hosten, etwa auf einem NAS.
 
 ### Per GitHub Actions
 
@@ -102,4 +102,4 @@ docker compose up web -d         # Download-Seite unter http://localhost:8080
 git tag v1.2.0 && git push origin v1.2.0
 ```
 
-Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen), `docs/` (Download-Seite).
+Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen). Die Download-Seite (`docs/index.html`) liegt nur lokal und läuft über `docker compose up web`, siehe oben.
