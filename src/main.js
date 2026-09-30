@@ -338,6 +338,68 @@ function registerIpc() {
   });
 }
 
+// ---------------------------------------------------------------- Updates
+
+/** Sucht kurz nach dem Start und dann stündlich nach einer neuen Version (GitHub-Releases),
+ *  lädt sie im Hintergrund und fragt, ob jetzt neu gestartet werden soll. */
+function setupAutoUpdate() {
+  // Nur installierte Versionen: die portable .exe, tar.gz und die unsignierte Mac-App können sich nicht selbst ersetzen
+  if (!app.isPackaged || process.env.PORTABLE_EXECUTABLE_DIR || process.platform === 'darwin') return;
+  let autoUpdater;
+  try {
+    ({ autoUpdater } = require('electron-updater'));
+  } catch {
+    return;
+  }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // "Später": wird beim nächsten Beenden installiert
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  let retry = null;
+  autoUpdater.on('error', () => {
+    // offline oder GitHub-Limit: in 10 Minuten nochmal
+    clearTimeout(retry);
+    retry = setTimeout(check, 10 * 60 * 1000);
+  });
+  // "Später": erst wieder fragen, wenn eine noch neuere Version erscheint oder zwei Wochen um sind
+  const laterFile = path.join(app.getPath('userData'), 'update.json');
+  const readLater = () => {
+    try {
+      return JSON.parse(fs.readFileSync(laterFile, 'utf8'));
+    } catch {
+      return {};
+    }
+  };
+  let asking = false;
+  autoUpdater.on('update-downloaded', async (info) => {
+    const later = readLater();
+    if (asking || (later.version === info.version && Date.now() < later.until)) return;
+    asking = true;
+    const parent = launcherWin && !launcherWin.isDestroyed() ? launcherWin : BrowserWindow.getFocusedWindow();
+    const options = {
+      type: 'info',
+      buttons: ['Jetzt neu starten', 'Später'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Webcase-Update',
+      message: `Webcase ${info.version} ist bereit.`,
+      detail: 'Jetzt neu starten, um das Update zu installieren? Sonst wird es beim nächsten Beenden von selbst installiert.',
+    };
+    const { response } = parent ? await dialog.showMessageBox(parent, options) : await dialog.showMessageBox(options);
+    asking = false;
+    if (response === 0) {
+      autoUpdater.quitAndInstall();
+    } else {
+      try {
+        fs.writeFileSync(laterFile, JSON.stringify({ version: info.version, until: Date.now() + 14 * 24 * 3600 * 1000 }));
+      } catch {
+        // egal - dann wird eben beim nächsten Mal wieder gefragt
+      }
+    }
+  });
+  setTimeout(check, 5000);
+  setInterval(check, 60 * 60 * 1000);
+}
+
 // ---------------------------------------------------------------- Start
 
 if (!app.requestSingleInstanceLock()) {
@@ -380,6 +442,7 @@ if (!app.requestSingleInstanceLock()) {
       },
     });
     registerIpc();
+    setupAutoUpdate();
     const files = htmlArgs(process.argv);
     if (files.length) await launchArgs(files);
     else createLauncher();
