@@ -1,11 +1,11 @@
 {
-  "name": "html-launcher",
-  "productName": "HTML Launcher",
-  "version": "1.1.0",
+  "name": "webcase",
+  "productName": "Webcase",
+  "version": "1.2.0",
   "description": "Startet HTML-Dateien wie eigenständige Programme.",
   "main": "src/main.js",
   "private": true,
-  "desktopName": "html-launcher",
+  "desktopName": "webcase",
   "scripts": {
     "start": "electron .",
     "icon": "node tools/make-icon.js",
@@ -28,15 +28,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/erqf1/html-launcher.git"
+    "url": "https://github.com/erqf1/webcase.git"
   },
   "build": {
-    "appId": "app.html-launcher",
-    "productName": "HTML Launcher",
+    "appId": "app.webcase",
+    "productName": "Webcase",
     "directories": { "output": "dist" },
     "files": ["src/**/*", "assets/icon.png", "package.json"],
     "afterPack": "tools/afterPack.js",
-    "publish": { "provider": "github", "owner": "erqf1", "repo": "html-launcher" },
+    "publish": { "provider": "github", "owner": "erqf1", "repo": "webcase" },
     "fileAssociations": [
       { "ext": "html", "name": "HTML-Datei", "description": "HTML-Datei", "icon": "assets/icon.ico", "role": "Viewer" },
       { "ext": "htm", "name": "HTM-Datei", "description": "HTM-Datei", "icon": "assets/icon.ico", "role": "Viewer" }
@@ -49,7 +49,7 @@
       ]
     },
     "nsis": {
-      "artifactName": "HTML-Launcher-Setup-${version}.${ext}",
+      "artifactName": "Webcase-Setup-${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
@@ -57,22 +57,22 @@
       "createStartMenuShortcut": true
     },
     "portable": {
-      "artifactName": "HTML-Launcher-${version}-portable.${ext}"
+      "artifactName": "Webcase-${version}-portable.${ext}"
     },
     "linux": {
       "icon": "assets/icon.png",
       "category": "Utility",
       "syncDesktopName": true,
       "synopsis": "Startet HTML-Dateien wie eigenständige Programme",
-      "artifactName": "HTML-Launcher-${version}-${arch}.${ext}",
+      "artifactName": "Webcase-${version}-${arch}.${ext}",
       "target": [
         { "target": "deb", "arch": ["x64"] },
         { "target": "pacman", "arch": ["x64"] },
         { "target": "tar.gz", "arch": ["x64"] }
       ]
     },
-    "deb": { "artifactName": "HTML-Launcher-${version}-amd64.${ext}" },
-    "pacman": { "artifactName": "HTML-Launcher-${version}-x86_64.${ext}" },
+    "deb": { "artifactName": "Webcase-${version}-amd64.${ext}" },
+    "pacman": { "artifactName": "Webcase-${version}-x86_64.${ext}" },
     "mac": {
       "icon": "assets/icon.icns",
       "category": "public.app-category.utilities",
@@ -80,7 +80,7 @@
         { "target": "zip", "arch": ["arm64"] },
         { "target": "zip", "arch": ["x64"] }
       ],
-      "artifactName": "HTML-Launcher-${version}-mac-${arch}.${ext}"
+      "artifactName": "Webcase-${version}-mac-${arch}.${ext}"
     }
   }
 }

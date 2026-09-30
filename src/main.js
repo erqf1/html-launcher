@@ -268,7 +268,7 @@ function attachProgramBehavior(win, originalUrl, programId) {
 
 function createLauncher() {
   launcherWin = new BrowserWindow({
-    title: 'HTML Launcher',
+    title: 'Webcase',
     width: 1040,
     height: 700,
     minWidth: 640,

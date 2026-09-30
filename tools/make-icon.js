@@ -12,6 +12,70 @@ const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
 const COLOR_A = [99, 102, 241]; // indigo
 const COLOR_B = [168, 85, 247]; // violett
 
+/**
+ * Zeichnet ein kleines Fenster (Titelleiste mit Punkt) mit einem </>-Zeichen
+ * darunter - zeigt "läuft als eigenes Programm" (Fenster) UND "HTML" (Klammern)
+ * statt eines Play-Dreiecks, das eher nach Video/Musik aussieht.
+ */
+function glyphTester(box, offset) {
+  const P = (x, y) => [offset + x * box, offset + y * box];
+  const L = (v) => v * box;
+
+  // Rechteck mit abgerundeten Ecken, per Punkttest (wie das Hintergrund-Quadrat
+  // unten) - hier aber auch für Nicht-Quadrate nutzbar.
+  const inRoundedRect = (x, y, left, top, right, bottom, r) => {
+    const hw = (right - left) / 2;
+    const hh = (bottom - top) / 2;
+    const cx = (left + right) / 2;
+    const cy = (top + bottom) / 2;
+    const dx = Math.max(Math.abs(x - cx) - (hw - r), 0);
+    const dy = Math.max(Math.abs(y - cy) - (hh - r), 0);
+    return dx * dx + dy * dy <= r * r;
+  };
+  const distToSegment = (px, py, ax, ay, bx, by) => {
+    const abx = bx - ax;
+    const aby = by - ay;
+    const lenSq = abx * abx + aby * aby;
+    let t = lenSq > 0 ? ((px - ax) * abx + (py - ay) * aby) / lenSq : 0;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * abx;
+    const cy = ay + t * aby;
+    return Math.hypot(px - cx, py - cy);
+  };
+  const nearSegment = (x, y, a, b, strokeHalf) => distToSegment(x, y, a[0], a[1], b[0], b[1]) <= strokeHalf;
+
+  // Fenster: dünner Rahmen (Ring) + Titelleisten-Linie + Punkt oben links.
+  const win = { left: 0.21, top: 0.23, right: 0.79, bottom: 0.74, radius: 0.045 };
+  const windowStroke = L(0.05);
+  const titlebarY = 0.365;
+  const dot = P(0.275, 0.3);
+  const dotRadius = L(0.022);
+
+  // "<" und ">" darunter, als zwei Winkel aus je zwei Liniensegmenten.
+  const chevronStroke = L(0.05);
+  const lt = P(0.465, 0.44), lm = P(0.4, 0.56), lb = P(0.465, 0.68);
+  const rt = P(0.535, 0.44), rm = P(0.6, 0.56), rb = P(0.535, 0.68);
+
+  return (x, y) => {
+    const sh = windowStroke / 2;
+    const outer = inRoundedRect(x, y, ...P(win.left, win.top), ...P(win.right, win.bottom), L(win.radius) + sh);
+    // Innerer Rand etwas eingezogen -> echter Ring statt gefüllter Fläche.
+    const wl = P(win.left, win.top);
+    const wr = P(win.right, win.bottom);
+    const inner = inRoundedRect(x, y, wl[0] + windowStroke, wl[1] + windowStroke, wr[0] - windowStroke, wr[1] - windowStroke, Math.max(L(win.radius) - windowStroke, 0));
+    if (outer && !inner) return true;
+    if (inRoundedRect(x, y, offset + win.left * box, offset + titlebarY * box - sh, offset + win.right * box, offset + titlebarY * box + sh, sh)) return true;
+    if (Math.hypot(x - dot[0], y - dot[1]) <= dotRadius) return true;
+    const ch = chevronStroke / 2;
+    return (
+      nearSegment(x, y, lt, lm, ch) ||
+      nearSegment(x, y, lm, lb, ch) ||
+      nearSegment(x, y, rt, rm, ch) ||
+      nearSegment(x, y, rm, rb, ch)
+    );
+  };
+}
+
 /** pad: transparenter Rand als Anteil der Kantenlänge (macOS-Icons haben ~10 % Rand). */
 function render(size, pad = 0) {
   const SS = 4; // Supersampling für glatte Kanten
@@ -20,17 +84,12 @@ function render(size, pad = 0) {
   const radius = box * 0.25;
   const half = box / 2;
   const center = size / 2;
-  const tri = [[0.38, 0.28], [0.38, 0.72], [0.74, 0.5]].map(([x, y]) => [offset + x * box, offset + y * box]);
+  const inGlyph = glyphTester(box, offset);
 
   const inRoundRect = (x, y) => {
     const dx = Math.max(Math.abs(x - center) - (half - radius), 0);
     const dy = Math.max(Math.abs(y - center) - (half - radius), 0);
     return dx * dx + dy * dy <= radius * radius;
-  };
-  const inTriangle = (x, y) => {
-    const side = (a, b) => (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]);
-    const s = [side(tri[0], tri[1]), side(tri[1], tri[2]), side(tri[2], tri[0])];
-    return s.every((v) => v >= 0) || s.every((v) => v <= 0);
   };
 
   const pixels = Buffer.alloc(size * size * 4);
@@ -46,7 +105,7 @@ function render(size, pad = 0) {
           const fy = y + (sy + 0.5) / SS;
           if (!inRoundRect(fx, fy)) continue;
           covered++;
-          if (inTriangle(fx, fy)) {
+          if (inGlyph(fx, fy)) {
             r += 255; g += 255; b += 255;
           } else {
             const t = (fx + fy - 2 * offset) / (2 * box);

@@ -3,7 +3,7 @@
 # automatisch selbst herunter - das ist der Hauptgrund, das hier statt direkt unter
 # Windows laufen zu lassen (siehe docker-compose.yml).
 #
-# Der HTML Launcher SELBST läuft hier nicht drin - er ist eine Desktop-App, die
+# Webcase SELBST läuft hier nicht drin - es ist eine Desktop-App, die
 # native Fenster auf einem echten Bildschirm öffnet, wofür ein Container keinen
 # Zugriff hat.
 FROM node:22-bookworm-slim

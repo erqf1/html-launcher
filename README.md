@@ -1,26 +1,26 @@
-# HTML Launcher
+# Webcase
 
 Doppelklick auf eine HTML-Datei, und sie läuft wie ein eigenes Programm – in ihrem eigenen Fenster, ohne Adressleiste, ohne Tabs, ohne Browser drumherum. Alle so gestarteten Dateien landen nebenbei in einem Menü, falls du sie mal wiederfinden willst. Läuft unter Windows, Linux und macOS.
 
-**[Releases](https://github.com/erqf1/html-launcher/releases)** · Lizenz: [Apache 2.0](LICENSE)
+**[Releases](https://github.com/erqf1/webcase/releases)** · Lizenz: [Apache 2.0](LICENSE)
 
 ## Fertige Pakete
 
 | System | Optionen |
 | --- | --- |
-| Windows | **Installer** (`HTML-Launcher-Setup-*.exe`, trägt HTML Launcher bei „Öffnen mit“ für `.html`/`.htm` ein) oder **portabel** (`HTML-Launcher-*-portable.exe`, keine Installation) |
+| Windows | **Installer** (`Webcase-Setup-*.exe`, trägt Webcase bei „Öffnen mit“ für `.html`/`.htm` ein) oder **portabel** (`Webcase-*-portable.exe`, keine Installation) |
 | Linux | `.deb` (Debian/Ubuntu), `.pacman` (Arch) oder `.tar.gz` (portabel, jede Distribution) |
 | macOS | `.zip` für Apple Silicon oder Intel (App-Bundle, immer portabel) |
 
-Bei der Windows-Installation lässt sich der Zielordner frei wählen (Assistent, kein „One-Click“-Installer). Alle Downloads: [Releases-Seite](https://github.com/erqf1/html-launcher/releases).
+Bei der Windows-Installation lässt sich der Zielordner frei wählen (Assistent, kein „One-Click“-Installer). Alle Downloads: [Releases-Seite](https://github.com/erqf1/webcase/releases).
 
 ### Linux
 
-`.deb` und `.pacman` installieren sich wie gewohnt über den Paketmanager der Distribution. Bei `.tar.gz`: entpacken, dann `./HTML Launcher` ausführen. Startet die App mit einer Meldung zum „SUID sandbox helper“ nicht (z. B. Ubuntu 24.04+):
+`.deb` und `.pacman` installieren sich wie gewohnt über den Paketmanager der Distribution. Bei `.tar.gz`: entpacken, dann `./Webcase` ausführen. Startet die App mit einer Meldung zum „SUID sandbox helper“ nicht (z. B. Ubuntu 24.04+):
 
 ```bash
 sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox   # empfohlen
-./HTML\ Launcher --no-sandbox                                           # Notlösung, schwächere Isolation
+./Webcase --no-sandbox                                                  # Notlösung, schwächere Isolation
 ```
 
 ### macOS
@@ -28,8 +28,8 @@ sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox   # empfoh
 Die App ist **nicht signiert** (Signieren geht nur auf einem Mac mit Apple-Entwicklerkonto). Einmalig nach dem Entpacken im Terminal:
 
 ```bash
-xattr -cr "HTML Launcher.app"
-codesign --force --deep --sign - "HTML Launcher.app"   # nötig auf Apple Silicon
+xattr -cr Webcase.app
+codesign --force --deep --sign - Webcase.app   # nötig auf Apple Silicon
 ```
 
 Beim ersten Start ggf. Rechtsklick → „Öffnen“.
@@ -38,7 +38,7 @@ Beim ersten Start ggf. Rechtsklick → „Öffnen“.
 
 | Aktion | So geht's |
 | --- | --- |
-| HTML-Datei starten | Doppelklick auf die Datei, oder „Öffnen mit“ → HTML Launcher (nach der Installation) |
+| HTML-Datei starten | Doppelklick auf die Datei, oder „Öffnen mit“ → Webcase (nach der Installation) |
 | Programm zur Liste hinzufügen | **HTML hinzufügen** (Strg+O, auf dem Mac ⌘O) oder Datei ins Fenster ziehen |
 | Aus der Liste starten | Karte anklicken (oder Enter) |
 | Umbenennen / Entfernen | Symbole oben rechts an der Karte (oder F2 / Entf) |
@@ -72,7 +72,7 @@ Lädt ein Programm eine Datei herunter, bleibt das in der App – es öffnet sic
 - **Relative Dateien** (CSS, Skripte, Bilder neben der HTML-Datei) werden normal geladen. WebGL und WebGPU laufen mit Hardwarebeschleunigung.
 - **Links ins Web** (`http`/`https`) öffnen im Standardbrowser statt das Programm zu ersetzen.
 - **Verschobene Dateien** werden in der Liste als „Datei fehlt“ markiert. Entfernen und am neuen Ort wieder hinzufügen.
-- **Die Liste liegt in** `%APPDATA%\HTML Launcher\library.json` (Windows), `~/Library/Application Support/HTML Launcher/` (macOS), `~/.config/HTML Launcher/` (Linux).
+- **Die Liste liegt in** `%APPDATA%\Webcase\library.json` (Windows), `~/Library/Application Support/Webcase/` (macOS), `~/.config/Webcase/` (Linux).
 - **Bekannte Einschränkung:** Der Windows-Installer trägt beim Deinstallieren den „Öffnen mit“-Eintrag nicht automatisch wieder aus (electron-builder-Verhalten). Harmlos – der Eintrag verweist danach nur ins Leere.
 
 ## Entwickeln & selbst bauen
@@ -103,7 +103,7 @@ docker compose up web -d         # Download-Seite unter http://localhost:8080
 `.github/workflows/release.yml` baut bei jedem `v*`-Tag auf echten Windows-, Linux- und macOS-Runnern und lädt die Pakete automatisch ins passende GitHub-Release hoch:
 
 ```bash
-git tag v1.2.0 && git push origin v1.2.0
+git tag v1.3.0 && git push origin v1.3.0
 ```
 
 Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen). Die Download-Seite (`docs/index.html`) liegt nur lokal und läuft über `docker compose up web`, siehe oben.

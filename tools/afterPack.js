@@ -19,7 +19,7 @@ exports.default = async function afterPack({ appOutDir, electronPlatformName }) 
   if (electronPlatformName === 'darwin') {
     const resources = path.join(
       appOutDir,
-      'HTML Launcher.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources'
+      'Webcase.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources'
     );
     for (const name of await fs.promises.readdir(resources)) {
       if (!name.endsWith('.lproj') || name === 'Base.lproj') continue;
