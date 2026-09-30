@@ -17,7 +17,7 @@ const ICONS = {
 };
 
 let state = { items: [], running: [] };
-let downloadsState = { items: [], askSavePath: true };
+let downloadsState = { items: [] };
 let query = '';
 
 // ---------------------------------------------------------------- Hilfen
@@ -300,7 +300,6 @@ function renderDownloads() {
   $('#downloads-empty').hidden = items.length > 0;
   $('#downloads-clear').hidden = items.length === 0;
   $('#downloads-badge').hidden = !items.some((i) => i.state === 'progressing' || i.state === 'paused');
-  $('#downloads-ask').checked = downloadsState.askSavePath;
 }
 
 // ---------------------------------------------------------------- Verdrahtung
@@ -319,7 +318,6 @@ document.querySelectorAll('[data-mod]').forEach((node) => (node.textContent = mo
 $('#add').title = `HTML-Dateien hinzufügen (${modLabel}+O)`;
 
 $('#downloads-btn').addEventListener('click', () => downloadsModal.showModal());
-$('#downloads-ask').addEventListener('change', (event) => api.setAskSavePath(event.target.checked));
 api.onShowDownloads(() => {
   if (modal.open) modal.close();
   if (!downloadsModal.open) downloadsModal.showModal();

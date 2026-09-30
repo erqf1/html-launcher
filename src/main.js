@@ -53,7 +53,7 @@ async function getDownloadsState() {
       return { ...item, missing: item.active ? false : item.path ? !(await exists(item.path)) : true };
     })
   );
-  return { items, askSavePath: downloads.askSavePath };
+  return { items };
 }
 
 function broadcastDownloads() {
@@ -219,9 +219,10 @@ function attachProgramBehavior(win, originalUrl, programId) {
     }
   });
 
-  // Downloads laufen wie im Browser: "Speichern unter", Blase mit Fortschritt oben rechts
-  // im Fenster, Fortschritt in der Taskleiste. Siehe download-manager.js.
+  // Downloads laufen wie im Browser: direkt in den Downloads-Ordner, Blase mit Fortschritt
+  // oben rechts im Fenster, Fortschritt in der Taskleiste. Siehe download-manager.js.
   downloadManager.wire(programId, webContents.session);
+  downloadManager.prepare(programId);
 
   // Esc bleibt bewusst dem Programm überlassen (Pausemenüs usw.).
   webContents.on('before-input-event', (event, input) => {
@@ -330,11 +331,6 @@ function registerIpc() {
 
   ipcMain.handle('downloads:remove', async (_event, id, deleteFile) => {
     downloadManager.remove(String(id), !!deleteFile);
-  });
-
-  ipcMain.handle('downloads:set-ask', async (_event, value) => {
-    downloads.setAskSavePath(!!value);
-    broadcastDownloads();
   });
 
   ipcMain.handle('downloads:clear', async (_event, deleteFiles) => {

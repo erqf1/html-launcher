@@ -67,7 +67,7 @@ Der Name eines Programms ist der `<title>` der HTML-Datei (sonst der Dateiname) 
 
 Downloads laufen wie im Browser, ohne dass sich ein Browser öffnet:
 
-- **Speichern unter:** Vor jedem Download fragt Webcase, wohin die Datei soll (voreingestellt ist der Downloads-Ordner). Abschaltbar in der Download-Liste im Menü – dann landen Dateien direkt im Downloads-Ordner.
+- **Ohne Nachfragen:** Dateien landen sofort im normalen Downloads-Ordner (gleichnamige Dateien bekommen " (1)", " (2)" … angehängt).
 - **Download-Blase** oben rechts im Programmfenster: Fortschritt, Geschwindigkeit, Restzeit, Pausieren/Fortsetzen, Abbrechen, Erneut versuchen; fertige Dateien per Klick öffnen oder im Ordner zeigen. Sie klappt sich nach ein paar Sekunden zu einem kleinen Knopf mit Fortschrittsring zusammen; `Strg+J` (`⌘J`) öffnet sie wieder.
 - **Taskleiste:** Der Fortschritt erscheint auch auf dem Taskleisten-Symbol (bzw. im Dock).
 - **Verlauf:** Über das Pfeil-Symbol im Menü (neben der Suche) siehst du alle Downloads; Löschen entfernt auch die Datei von der Festplatte.
@@ -114,4 +114,4 @@ docker compose up web -d         # Download-Seite unter http://localhost:8080
 git tag v1.3.0 && git push origin v1.3.0
 ```
 
-Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/downloads.js` + `src/download-manager.js` (Download-Verlauf, Fortschritt, „Speichern unter“), `src/bubble/` (Download-Blase im Programmfenster), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen). Die Download-Seite (`docs/index.html`) liegt nur lokal und läuft über `docker compose up web`, siehe oben.
+Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/downloads.js` + `src/download-manager.js` (Download-Verlauf, Fortschritt), `src/bubble/` (Download-Blase im Programmfenster), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen). Die Download-Seite (`docs/index.html`) liegt nur lokal und läuft über `docker compose up web`, siehe oben.

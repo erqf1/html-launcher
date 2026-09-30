@@ -1,10 +1,10 @@
 'use strict';
 
-// Downloads wie im Browser: "Speichern unter", Fortschritt, Pause/Abbrechen und eine
+// Downloads wie im Browser: sofort in den Downloads-Ordner, Fortschritt, Pause/Abbrechen und eine
 // Download-Blase oben rechts im Programmfenster (eigene WebContentsView über der Seite,
 // damit das HTML-Programm selbst nicht angefasst wird).
 
-const { WebContentsView, app, dialog, ipcMain, session, shell } = require('electron');
+const { WebContentsView, app, ipcMain, session, shell } = require('electron');
 const path = require('path');
 const { uniquePath } = require('./downloads');
 
@@ -49,26 +49,8 @@ class DownloadManager {
   }
 
   _onWillDownload(programId, item) {
-    const win = this.getProgramWindow(programId);
-    let savePath = uniquePath(app.getPath('downloads'), item.getFilename());
-
-    if (this.downloads.askSavePath) {
-      const ext = path.extname(savePath).slice(1);
-      const options = {
-        title: 'Speichern unter',
-        defaultPath: savePath,
-        filters: ext
-          ? [{ name: `${ext.toUpperCase()}-Datei`, extensions: [ext] }, { name: 'Alle Dateien', extensions: ['*'] }]
-          : undefined,
-      };
-      // Synchron ist hier gewollt: Der Download darf erst starten, wenn der Pfad feststeht.
-      const chosen = win && !win.isDestroyed() ? dialog.showSaveDialogSync(win, options) : dialog.showSaveDialogSync(options);
-      if (!chosen) {
-        item.cancel();
-        return;
-      }
-      savePath = chosen;
-    }
+    // Kein Nachfragen: immer direkt in den Downloads-Ordner, die Blase zeigt es sofort an.
+    const savePath = uniquePath(app.getPath('downloads'), item.getFilename());
     item.setSavePath(savePath);
 
     const filename = path.basename(savePath);
@@ -255,6 +237,12 @@ class DownloadManager {
   }
 
   // ---------------------------------------------------------------- Download-Blase
+
+  /** Legt die Blase schon beim Öffnen des Programms an, damit sie beim ersten Download
+   *  ohne Ladezeit sofort erscheint. */
+  prepare(programId) {
+    this._ensureBubble(programId);
+  }
 
   /** reason: 'start' | 'done' (öffnet kurz) oder 'toggle' (Strg+J). */
   open(programId, reason) {

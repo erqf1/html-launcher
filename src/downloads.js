@@ -24,7 +24,6 @@ function uniquePath(dir, filename) {
 class Downloads {
   constructor(file) {
     this.file = file;
-    this.askSavePath = true; // wie "Vor dem Download fragen, wo gespeichert werden soll" im Browser
     this.items = this._load();
   }
 
@@ -37,7 +36,6 @@ class Downloads {
     }
     try {
       const data = JSON.parse(raw);
-      if (typeof data.askSavePath === 'boolean') this.askSavePath = data.askSavePath;
       if (!Array.isArray(data.items)) return [];
       // Was beim letzten Beenden noch lief, ist abgebrochen - nicht ewig "Lädt…" anzeigen.
       for (const entry of data.items) {
@@ -51,7 +49,7 @@ class Downloads {
 
   _save() {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    const data = JSON.stringify({ version: 1, askSavePath: this.askSavePath, items: this.items.slice(0, HISTORY_LIMIT) }, null, 2);
+    const data = JSON.stringify({ version: 1, items: this.items.slice(0, HISTORY_LIMIT) }, null, 2);
     const tmp = `${this.file}.tmp`;
     fs.writeFileSync(tmp, data);
     try {
@@ -74,11 +72,6 @@ class Downloads {
     this.items.unshift(entry);
     this._save();
     return entry.id;
-  }
-
-  setAskSavePath(value) {
-    this.askSavePath = !!value;
-    this._save();
   }
 
   update(entryId, patch) {

@@ -15,7 +15,6 @@ contextBridge.exposeInMainWorld('launcher', {
 
   getDownloads: () => ipcRenderer.invoke('downloads:get'),
   downloadAction: (id, action) => ipcRenderer.invoke('downloads:action', id, action),
-  setAskSavePath: (value) => ipcRenderer.invoke('downloads:set-ask', value),
   removeDownload: (id, deleteFile) => ipcRenderer.invoke('downloads:remove', id, deleteFile),
   clearDownloads: (deleteFiles) => ipcRenderer.invoke('downloads:clear', deleteFiles),
   onDownloads: (callback) => ipcRenderer.on('downloads:changed', (_event, state) => callback(state)),
