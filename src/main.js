@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { Library, isHtmlFile, idFor } = require('./store');
-const { Downloads, uniquePath } = require('./downloads');
+const { Downloads } = require('./downloads');
+const { DownloadManager } = require('./download-manager');
 
 const ICON = path.join(__dirname, '..', 'assets', 'icon.png');
 const PRELOAD = path.join(__dirname, 'preload.js');
@@ -13,10 +14,10 @@ const LAUNCHER_PAGE = path.join(__dirname, 'renderer', 'index.html');
 
 let library;
 let downloads;
+let downloadManager;
 let launcherWin = null;
 const programWins = new Map(); // id -> BrowserWindow
 const launching = new Set(); // ids, die gerade starten (gegen Doppelklick)
-const downloadSessionsWired = new Set(); // Programm-IDs, deren Partition schon einen will-download-Listener hat
 
 // ---------------------------------------------------------------- Zustand
 
@@ -46,9 +47,13 @@ async function broadcast() {
 
 async function getDownloadsState() {
   const items = await Promise.all(
-    downloads.items.map(async (item) => ({ ...item, missing: item.path ? !(await exists(item.path)) : true }))
+    downloads.items.map(async (entry) => {
+      const item = downloadManager.describe(entry);
+      // Während des Downloads existiert die Datei noch nicht unter ihrem Namen
+      return { ...item, missing: item.active ? false : item.path ? !(await exists(item.path)) : true };
+    })
   );
-  return { items };
+  return { items, askSavePath: downloads.askSavePath };
 }
 
 function broadcastDownloads() {
@@ -214,33 +219,9 @@ function attachProgramBehavior(win, originalUrl, programId) {
     }
   });
 
-  // Downloads bleiben in der App: eigener Ordner (System-Downloads), eigener
-  // Verlauf im Menü statt eines für den Nutzer unsichtbaren Sprungs in den Browser.
-  // Die Partition (und damit die Session) überlebt Schließen/Neustarten desselben
-  // Programms - der Listener darf pro Partition nur einmal angehängt werden,
-  // sonst feuert er bei jedem Neustart ein zusätzliches Mal für denselben Download.
-  if (!downloadSessionsWired.has(programId)) {
-    downloadSessionsWired.add(programId);
-    webContents.session.on('will-download', (event, item) => {
-      const savePath = uniquePath(app.getPath('downloads'), item.getFilename());
-      item.setSavePath(savePath);
-      const filename = path.basename(savePath);
-      const entryId = downloads.start({ url: item.getURL(), filename, path: savePath });
-      broadcastDownloads();
-      toast(`Download gestartet: ${filename}`, 'info');
-
-      item.on('updated', (_e, state) => {
-        if (state === 'interrupted') downloads.update(entryId, { state });
-        broadcastDownloads();
-      });
-      item.once('done', (_e, state) => {
-        downloads.update(entryId, { state, size: item.getReceivedBytes(), completedAt: Date.now() });
-        broadcastDownloads();
-        if (state === 'completed') toast(`Download abgeschlossen: ${filename}`, 'ok');
-        else if (state !== 'cancelled') toast(`Download fehlgeschlagen: ${filename}`, 'error');
-      });
-    });
-  }
+  // Downloads laufen wie im Browser: "Speichern unter", Blase mit Fortschritt oben rechts
+  // im Fenster, Fortschritt in der Taskleiste. Siehe download-manager.js.
+  downloadManager.wire(programId, webContents.session);
 
   // Esc bleibt bewusst dem Programm überlassen (Pausemenüs usw.).
   webContents.on('before-input-event', (event, input) => {
@@ -257,6 +238,8 @@ function attachProgramBehavior(win, originalUrl, programId) {
       else webContents.reload();
     } else if (input.key === 'F12' || (ctrl && input.shift && key === 'i')) {
       webContents.toggleDevTools();
+    } else if (ctrl && !input.alt && !input.shift && key === 'j') {
+      downloadManager.open(programId, 'toggle');
     } else {
       return;
     }
@@ -339,26 +322,23 @@ function registerIpc() {
 
   ipcMain.handle('downloads:get', getDownloadsState);
 
-  ipcMain.handle('downloads:open', async (_event, id) => {
-    const entry = downloads.find(String(id));
-    if (!entry) return;
-    const error = await shell.openPath(entry.path);
-    if (error) toast('Datei konnte nicht geöffnet werden. Wurde sie verschoben oder gelöscht?', 'error');
-  });
-
-  ipcMain.handle('downloads:reveal', (_event, id) => {
-    const entry = downloads.find(String(id));
-    if (entry) shell.showItemInFolder(entry.path);
+  // open, reveal, pause, resume, cancel, retry
+  ipcMain.handle('downloads:action', async (_event, id, action) => {
+    const error = await downloadManager.action(String(id), String(action));
+    if (error) toast(error, 'error');
   });
 
   ipcMain.handle('downloads:remove', async (_event, id, deleteFile) => {
-    downloads.remove(String(id), { deleteFile: !!deleteFile });
+    downloadManager.remove(String(id), !!deleteFile);
+  });
+
+  ipcMain.handle('downloads:set-ask', async (_event, value) => {
+    downloads.setAskSavePath(!!value);
     broadcastDownloads();
   });
 
   ipcMain.handle('downloads:clear', async (_event, deleteFiles) => {
-    downloads.clear({ deleteFiles: !!deleteFiles });
-    broadcastDownloads();
+    downloadManager.clear(!!deleteFiles);
   });
 }
 
@@ -390,6 +370,19 @@ if (!app.requestSingleInstanceLock()) {
     );
     library = new Library(path.join(app.getPath('userData'), 'library.json'));
     downloads = new Downloads(path.join(app.getPath('userData'), 'downloads.json'));
+    downloadManager = new DownloadManager({
+      downloads,
+      getProgramWindow: (id) => programWins.get(id),
+      onChange: broadcastDownloads,
+      onToast: toast,
+      showAll: async () => {
+        showLauncher();
+        if (launcherWin.webContents.isLoading()) {
+          await new Promise((resolve) => launcherWin.webContents.once('did-finish-load', resolve));
+        }
+        send('downloads:show');
+      },
+    });
     registerIpc();
     const files = htmlArgs(process.argv);
     if (files.length) await launchArgs(files);

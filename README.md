@@ -58,13 +58,21 @@ Der Name eines Programms ist der `<title>` der HTML-Datei (sonst der Dateiname) 
 | `F11` | Vollbild ein/aus (macOS: auch Ctrl+⌘F) – startet standardmäßig maximiert, nicht im Vollbild |
 | `Strg+W` / `⌘W` (oder `Alt+F4`) | Programm beenden, zurück zum Launcher |
 | `F5` / `Strg+Shift+R` | Neu laden / Cache umgehen |
+| `Strg+J` / `⌘J` | Download-Liste ein/aus |
 | `F12` | Entwicklertools |
 
 `Esc` bleibt bewusst dem Programm überlassen (z. B. für Pausemenüs).
 
 ### Downloads
 
-Lädt ein Programm eine Datei herunter, bleibt das in der App – es öffnet sich kein Browser. Die Datei landet im normalen System-Downloads-Ordner; über das Pfeil-Symbol im Menü (neben der Suche) siehst du den Verlauf, kannst einen Download öffnen, im Ordner anzeigen lassen oder löschen (entfernt auch die Datei von der Festplatte). Nur echte Web-Links (normale Seiten, keine Downloads) öffnen weiterhin im Standardbrowser.
+Downloads laufen wie im Browser, ohne dass sich ein Browser öffnet:
+
+- **Speichern unter:** Vor jedem Download fragt Webcase, wohin die Datei soll (voreingestellt ist der Downloads-Ordner). Abschaltbar in der Download-Liste im Menü – dann landen Dateien direkt im Downloads-Ordner.
+- **Download-Blase** oben rechts im Programmfenster: Fortschritt, Geschwindigkeit, Restzeit, Pausieren/Fortsetzen, Abbrechen, Erneut versuchen; fertige Dateien per Klick öffnen oder im Ordner zeigen. Sie klappt sich nach ein paar Sekunden zu einem kleinen Knopf mit Fortschrittsring zusammen; `Strg+J` (`⌘J`) öffnet sie wieder.
+- **Taskleiste:** Der Fortschritt erscheint auch auf dem Taskleisten-Symbol (bzw. im Dock).
+- **Verlauf:** Über das Pfeil-Symbol im Menü (neben der Suche) siehst du alle Downloads; Löschen entfernt auch die Datei von der Festplatte.
+
+Nur echte Web-Links (normale Seiten, keine Downloads) öffnen weiterhin im Standardbrowser.
 
 ## Gut zu wissen
 
@@ -106,4 +114,4 @@ docker compose up web -d         # Download-Seite unter http://localhost:8080
 git tag v1.3.0 && git push origin v1.3.0
 ```
 
-Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen). Die Download-Seite (`docs/index.html`) liegt nur lokal und läuft über `docker compose up web`, siehe oben.
+Aufbau: `src/main.js` (Fenster, Start der Programme, IPC), `src/store.js` (gespeicherte Liste), `src/downloads.js` + `src/download-manager.js` (Download-Verlauf, Fortschritt, „Speichern unter“), `src/bubble/` (Download-Blase im Programmfenster), `src/preload.js` (Brücke), `src/renderer/` (Oberfläche), `tools/afterPack.js` (entfernt ungenutzte Sprachpakete/Renderer nach dem Bauen). Die Download-Seite (`docs/index.html`) liegt nur lokal und läuft über `docker compose up web`, siehe oben.

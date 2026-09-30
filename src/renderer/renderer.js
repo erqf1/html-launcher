@@ -10,10 +10,14 @@ const ICONS = {
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
   file: '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
   spinner: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></svg>',
+  pause: '<svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg>',
+  resume: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13L19 12z"/></svg>',
+  cancel: '<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+  retry: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>',
 };
 
 let state = { items: [], running: [] };
-let downloadsState = { items: [] };
+let downloadsState = { items: [], askSavePath: true };
 let query = '';
 
 // ---------------------------------------------------------------- Hilfen
@@ -54,8 +58,15 @@ function shortPath(fullPath) {
 
 function formatSize(bytes) {
   if (!bytes) return '';
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  const digits = unit === 0 || value >= 100 ? 0 : 1;
+  return `${value.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits })} ${units[unit]}`;
 }
 
 function formatWhen(ts) {
@@ -215,36 +226,62 @@ function render() {
 const downloadsModal = $('#downloads-modal');
 
 function downloadRow(entry) {
-  const isProgress = entry.state === 'progressing';
-  const isError = entry.missing || entry.state === 'interrupted';
+  const isActive = entry.state === 'progressing' || entry.state === 'paused';
+  const isError = !isActive && (entry.missing || entry.state === 'interrupted' || entry.state === 'cancelled');
+  const progress = entry.total ? `${formatSize(entry.received) || '0 KB'} von ${formatSize(entry.total)}` : formatSize(entry.received);
   const statusParts = [];
-  if (isProgress) statusParts.push('Lädt…');
-  else if (entry.state === 'interrupted') statusParts.push('Fehlgeschlagen');
-  else if (entry.missing) statusParts.push('Datei fehlt');
-  if (entry.size) statusParts.push(formatSize(entry.size));
-  statusParts.push(formatWhen(entry.completedAt || entry.startedAt));
+  if (entry.state === 'progressing') {
+    statusParts.push(progress || 'Lädt…');
+    if (entry.speed > 0) statusParts.push(`${formatSize(entry.speed)}/s`);
+  } else if (entry.state === 'paused') {
+    statusParts.push('Pausiert', progress);
+  } else if (entry.state === 'interrupted') {
+    statusParts.push('Fehlgeschlagen');
+  } else if (entry.state === 'cancelled') {
+    statusParts.push('Abgebrochen');
+  } else {
+    if (entry.missing) statusParts.push('Datei fehlt');
+    statusParts.push(formatSize(entry.size));
+  }
+  if (!isActive) statusParts.push(formatWhen(entry.completedAt || entry.startedAt));
 
   const icon = el('div', { className: 'dl-icon' });
-  icon.innerHTML = ICONS[isProgress ? 'spinner' : 'file'];
+  icon.innerHTML = ICONS[isActive ? 'spinner' : 'file'];
 
-  const openBtn = el(
+  const info = el(
     'button',
-    { className: 'dl-info', attrs: { type: 'button', title: entry.filename } },
+    { className: 'dl-info', attrs: { type: 'button', title: entry.path || entry.filename } },
     el('div', { className: 'dl-name', text: entry.filename }),
     el('div', { className: `dl-meta${isError ? ' error' : ''}`, text: statusParts.filter(Boolean).join(' · ') })
   );
-  openBtn.disabled = entry.missing || isProgress;
-  openBtn.addEventListener('click', () => api.openDownload(entry.id));
+  if (isActive) {
+    const fill = el('div', { className: 'dl-bar-fill' });
+    const bar = el('div', { className: `dl-bar${entry.state === 'paused' ? ' paused' : ''}` }, fill);
+    if (entry.total > 0) fill.style.width = `${Math.min(100, (entry.received / entry.total) * 100)}%`;
+    else bar.classList.add('indeterminate');
+    info.append(bar);
+  }
+  info.disabled = entry.missing || entry.state !== 'completed';
+  info.addEventListener('click', () => api.downloadAction(entry.id, 'open'));
 
-  const actions = el(
-    'div',
-    { className: 'dl-actions' },
-    iconButton('folder', 'Im Ordner zeigen', () => api.revealDownload(entry.id)),
-    iconButton('trash', 'Löschen', () => removeDownload(entry), 'danger')
-  );
+  const buttons = [];
+  if (entry.state === 'progressing') {
+    buttons.push(iconButton('pause', 'Pausieren', () => api.downloadAction(entry.id, 'pause')));
+    buttons.push(iconButton('cancel', 'Abbrechen', () => api.downloadAction(entry.id, 'cancel'), 'danger'));
+  } else if (entry.state === 'paused') {
+    buttons.push(iconButton('resume', 'Fortsetzen', () => api.downloadAction(entry.id, 'resume')));
+    buttons.push(iconButton('cancel', 'Abbrechen', () => api.downloadAction(entry.id, 'cancel'), 'danger'));
+  } else {
+    if (entry.state === 'interrupted' || entry.state === 'cancelled') {
+      buttons.push(iconButton('retry', 'Erneut versuchen', () => api.downloadAction(entry.id, 'retry')));
+    }
+    if (!entry.missing) buttons.push(iconButton('folder', 'Im Ordner zeigen', () => api.downloadAction(entry.id, 'reveal')));
+    buttons.push(iconButton('trash', 'Löschen', () => removeDownload(entry), 'danger'));
+  }
+  const actions = el('div', { className: 'dl-actions' }, ...buttons);
 
-  const stateClass = isProgress ? 'progressing' : isError ? 'missing' : '';
-  return el('div', { className: `dl-row ${stateClass}`.trim() }, icon, openBtn, actions);
+  const stateClass = isActive ? 'progressing' : isError ? 'missing' : '';
+  return el('div', { className: `dl-row ${stateClass}`.trim() }, icon, info, actions);
 }
 
 async function removeDownload(entry) {
@@ -254,7 +291,7 @@ async function removeDownload(entry) {
     confirm: 'Löschen',
     danger: true,
   });
-  if (confirmed) await api.removeDownload(entry.id, true);
+  if (confirmed) await api.removeDownload(entry.id, !entry.missing && entry.state === 'completed');
 }
 
 function renderDownloads() {
@@ -262,7 +299,8 @@ function renderDownloads() {
   $('#downloads-list').replaceChildren(...items.map(downloadRow));
   $('#downloads-empty').hidden = items.length > 0;
   $('#downloads-clear').hidden = items.length === 0;
-  $('#downloads-badge').hidden = !items.some((i) => i.state === 'progressing');
+  $('#downloads-badge').hidden = !items.some((i) => i.state === 'progressing' || i.state === 'paused');
+  $('#downloads-ask').checked = downloadsState.askSavePath;
 }
 
 // ---------------------------------------------------------------- Verdrahtung
@@ -281,6 +319,11 @@ document.querySelectorAll('[data-mod]').forEach((node) => (node.textContent = mo
 $('#add').title = `HTML-Dateien hinzufügen (${modLabel}+O)`;
 
 $('#downloads-btn').addEventListener('click', () => downloadsModal.showModal());
+$('#downloads-ask').addEventListener('change', (event) => api.setAskSavePath(event.target.checked));
+api.onShowDownloads(() => {
+  if (modal.open) modal.close();
+  if (!downloadsModal.open) downloadsModal.showModal();
+});
 $('#downloads-close').addEventListener('click', () => downloadsModal.close());
 $('[data-close-downloads]').addEventListener('click', () => downloadsModal.close());
 $('#downloads-clear').addEventListener('click', async () => {
