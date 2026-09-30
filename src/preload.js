@@ -12,6 +12,13 @@ contextBridge.exposeInMainWorld('launcher', {
   reveal: (id) => ipcRenderer.invoke('app:reveal', id),
   onState: (callback) => ipcRenderer.on('state:changed', (_event, state) => callback(state)),
   onToast: (callback) => ipcRenderer.on('toast', (_event, toast) => callback(toast)),
+
+  getDownloads: () => ipcRenderer.invoke('downloads:get'),
+  openDownload: (id) => ipcRenderer.invoke('downloads:open', id),
+  revealDownload: (id) => ipcRenderer.invoke('downloads:reveal', id),
+  removeDownload: (id, deleteFile) => ipcRenderer.invoke('downloads:remove', id, deleteFile),
+  clearDownloads: (deleteFiles) => ipcRenderer.invoke('downloads:clear', deleteFiles),
+  onDownloads: (callback) => ipcRenderer.on('downloads:changed', (_event, state) => callback(state)),
 });
 
 // Drag & Drop: Nur hier lässt sich der Dateipfad einer abgelegten Datei ermitteln.

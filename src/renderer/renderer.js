@@ -8,9 +8,12 @@ const ICONS = {
   edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
   folder: '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
+  file: '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
+  spinner: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></svg>',
 };
 
 let state = { items: [], running: [] };
+let downloadsState = { items: [] };
 let query = '';
 
 // ---------------------------------------------------------------- Hilfen
@@ -47,6 +50,17 @@ function shortPath(fullPath) {
   const sep = fullPath.includes('\\') ? '\\' : '/';
   const parts = fullPath.split(/[\\/]/).filter(Boolean);
   return parts.length > 2 ? `…${sep}${parts.slice(-2).join(sep)}` : fullPath;
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatWhen(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
 }
 
 function toast(message, kind = 'info') {
@@ -196,6 +210,61 @@ function render() {
   $('#grid').replaceChildren(...visible.map(card));
 }
 
+// ---------------------------------------------------------------- Downloads
+
+const downloadsModal = $('#downloads-modal');
+
+function downloadRow(entry) {
+  const isProgress = entry.state === 'progressing';
+  const isError = entry.missing || entry.state === 'interrupted';
+  const statusParts = [];
+  if (isProgress) statusParts.push('Lädt…');
+  else if (entry.state === 'interrupted') statusParts.push('Fehlgeschlagen');
+  else if (entry.missing) statusParts.push('Datei fehlt');
+  if (entry.size) statusParts.push(formatSize(entry.size));
+  statusParts.push(formatWhen(entry.completedAt || entry.startedAt));
+
+  const icon = el('div', { className: 'dl-icon' });
+  icon.innerHTML = ICONS[isProgress ? 'spinner' : 'file'];
+
+  const openBtn = el(
+    'button',
+    { className: 'dl-info', attrs: { type: 'button', title: entry.filename } },
+    el('div', { className: 'dl-name', text: entry.filename }),
+    el('div', { className: `dl-meta${isError ? ' error' : ''}`, text: statusParts.filter(Boolean).join(' · ') })
+  );
+  openBtn.disabled = entry.missing || isProgress;
+  openBtn.addEventListener('click', () => api.openDownload(entry.id));
+
+  const actions = el(
+    'div',
+    { className: 'dl-actions' },
+    iconButton('folder', 'Im Ordner zeigen', () => api.revealDownload(entry.id)),
+    iconButton('trash', 'Löschen', () => removeDownload(entry), 'danger')
+  );
+
+  const stateClass = isProgress ? 'progressing' : isError ? 'missing' : '';
+  return el('div', { className: `dl-row ${stateClass}`.trim() }, icon, openBtn, actions);
+}
+
+async function removeDownload(entry) {
+  const confirmed = await ask({
+    title: 'Download löschen?',
+    text: `„${entry.filename}“ wird aus dem Verlauf entfernt und von der Festplatte gelöscht.`,
+    confirm: 'Löschen',
+    danger: true,
+  });
+  if (confirmed) await api.removeDownload(entry.id, true);
+}
+
+function renderDownloads() {
+  const items = downloadsState.items;
+  $('#downloads-list').replaceChildren(...items.map(downloadRow));
+  $('#downloads-empty').hidden = items.length > 0;
+  $('#downloads-clear').hidden = items.length === 0;
+  $('#downloads-badge').hidden = !items.some((i) => i.state === 'progressing');
+}
+
 // ---------------------------------------------------------------- Verdrahtung
 
 $('#add').addEventListener('click', () => api.pick());
@@ -211,8 +280,21 @@ const modLabel = isMac ? '⌘' : 'Strg';
 document.querySelectorAll('[data-mod]').forEach((node) => (node.textContent = modLabel));
 $('#add').title = `HTML-Dateien hinzufügen (${modLabel}+O)`;
 
+$('#downloads-btn').addEventListener('click', () => downloadsModal.showModal());
+$('#downloads-close').addEventListener('click', () => downloadsModal.close());
+$('[data-close-downloads]').addEventListener('click', () => downloadsModal.close());
+$('#downloads-clear').addEventListener('click', async () => {
+  const confirmed = await ask({
+    title: 'Alle Downloads löschen?',
+    text: 'Der gesamte Verlauf wird geleert und alle Dateien werden von der Festplatte gelöscht.',
+    confirm: 'Alle löschen',
+    danger: true,
+  });
+  if (confirmed) await api.clearDownloads(true);
+});
+
 window.addEventListener('keydown', (event) => {
-  if (modal.open) return;
+  if (modal.open || downloadsModal.open) return;
   const mod = isMac ? event.metaKey : event.ctrlKey;
   if (mod && event.key.toLowerCase() === 'o') {
     event.preventDefault();
@@ -254,4 +336,13 @@ api.onToast(({ message, kind }) => toast(message, kind));
 api.getState().then((initial) => {
   state = initial;
   render();
+});
+
+api.onDownloads((next) => {
+  downloadsState = next;
+  renderDownloads();
+});
+api.getDownloads().then((initial) => {
+  downloadsState = initial;
+  renderDownloads();
 });

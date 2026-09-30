@@ -5,15 +5,18 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { Library, isHtmlFile, idFor } = require('./store');
+const { Downloads, uniquePath } = require('./downloads');
 
 const ICON = path.join(__dirname, '..', 'assets', 'icon.png');
 const PRELOAD = path.join(__dirname, 'preload.js');
 const LAUNCHER_PAGE = path.join(__dirname, 'renderer', 'index.html');
 
 let library;
+let downloads;
 let launcherWin = null;
 const programWins = new Map(); // id -> BrowserWindow
 const launching = new Set(); // ids, die gerade starten (gegen Doppelklick)
+const downloadSessionsWired = new Set(); // Programm-IDs, deren Partition schon einen will-download-Listener hat
 
 // ---------------------------------------------------------------- Zustand
 
@@ -39,6 +42,17 @@ function send(channel, payload) {
 
 async function broadcast() {
   if (launcherWin && !launcherWin.isDestroyed()) send('state:changed', await getState());
+}
+
+async function getDownloadsState() {
+  const items = await Promise.all(
+    downloads.items.map(async (item) => ({ ...item, missing: item.path ? !(await exists(item.path)) : true }))
+  );
+  return { items };
+}
+
+function broadcastDownloads() {
+  getDownloadsState().then((state) => send('downloads:changed', state));
 }
 
 function toast(message, kind = 'info') {
@@ -165,8 +179,9 @@ async function launch(id) {
       }
     });
 
-    attachProgramBehavior(win);
-    win.loadURL(pathToFileURL(item.path).href);
+    const originalUrl = pathToFileURL(item.path).href;
+    attachProgramBehavior(win, originalUrl, item.id);
+    win.loadURL(originalUrl);
     await broadcast();
     return { ok: true };
   } finally {
@@ -174,7 +189,7 @@ async function launch(id) {
   }
 }
 
-function attachProgramBehavior(win) {
+function attachProgramBehavior(win, originalUrl, programId) {
   const { webContents } = win;
 
   // Links ins Web öffnen im Standardbrowser statt das "Programm" zu ersetzen.
@@ -185,12 +200,47 @@ function attachProgramBehavior(win) {
     openExternal(url);
     return { action: 'deny' };
   });
-  webContents.on('will-navigate', (event, url) => {
-    if (/^https?:\/\//i.test(url)) {
-      event.preventDefault();
+
+  // will-navigate wird bewusst NICHT mehr blockiert: Ein Klick, der am Ende eine
+  // Datei herunterlädt (Content-Disposition:attachment), löst dieses Ereignis
+  // zwar aus, "navigiert" aber nie wirklich - die Seite bleibt stehen und
+  // will-download (siehe unten) übernimmt. Nur wenn die Navigation tatsächlich
+  // committet (did-navigate mit einer fremden http(s)-Adresse: es war also doch
+  // eine echte Seite), springen wir zurück und öffnen sie extern.
+  webContents.on('did-navigate', (event, url) => {
+    if (url !== originalUrl && /^https?:\/\//i.test(url)) {
       openExternal(url);
+      webContents.loadURL(originalUrl);
     }
   });
+
+  // Downloads bleiben in der App: eigener Ordner (System-Downloads), eigener
+  // Verlauf im Menü statt eines für den Nutzer unsichtbaren Sprungs in den Browser.
+  // Die Partition (und damit die Session) überlebt Schließen/Neustarten desselben
+  // Programms - der Listener darf pro Partition nur einmal angehängt werden,
+  // sonst feuert er bei jedem Neustart ein zusätzliches Mal für denselben Download.
+  if (!downloadSessionsWired.has(programId)) {
+    downloadSessionsWired.add(programId);
+    webContents.session.on('will-download', (event, item) => {
+      const savePath = uniquePath(app.getPath('downloads'), item.getFilename());
+      item.setSavePath(savePath);
+      const filename = path.basename(savePath);
+      const entryId = downloads.start({ url: item.getURL(), filename, path: savePath });
+      broadcastDownloads();
+      toast(`Download gestartet: ${filename}`, 'info');
+
+      item.on('updated', (_e, state) => {
+        if (state === 'interrupted') downloads.update(entryId, { state });
+        broadcastDownloads();
+      });
+      item.once('done', (_e, state) => {
+        downloads.update(entryId, { state, size: item.getReceivedBytes(), completedAt: Date.now() });
+        broadcastDownloads();
+        if (state === 'completed') toast(`Download abgeschlossen: ${filename}`, 'ok');
+        else if (state !== 'cancelled') toast(`Download fehlgeschlagen: ${filename}`, 'error');
+      });
+    });
+  }
 
   // Esc bleibt bewusst dem Programm überlassen (Pausemenüs usw.).
   webContents.on('before-input-event', (event, input) => {
@@ -286,6 +336,30 @@ function registerIpc() {
     const item = library.find(String(id));
     if (item) shell.showItemInFolder(item.path);
   });
+
+  ipcMain.handle('downloads:get', getDownloadsState);
+
+  ipcMain.handle('downloads:open', async (_event, id) => {
+    const entry = downloads.find(String(id));
+    if (!entry) return;
+    const error = await shell.openPath(entry.path);
+    if (error) toast('Datei konnte nicht geöffnet werden. Wurde sie verschoben oder gelöscht?', 'error');
+  });
+
+  ipcMain.handle('downloads:reveal', (_event, id) => {
+    const entry = downloads.find(String(id));
+    if (entry) shell.showItemInFolder(entry.path);
+  });
+
+  ipcMain.handle('downloads:remove', async (_event, id, deleteFile) => {
+    downloads.remove(String(id), { deleteFile: !!deleteFile });
+    broadcastDownloads();
+  });
+
+  ipcMain.handle('downloads:clear', async (_event, deleteFiles) => {
+    downloads.clear({ deleteFiles: !!deleteFiles });
+    broadcastDownloads();
+  });
 }
 
 // ---------------------------------------------------------------- Start
@@ -315,6 +389,7 @@ if (!app.requestSingleInstanceLock()) {
         : null
     );
     library = new Library(path.join(app.getPath('userData'), 'library.json'));
+    downloads = new Downloads(path.join(app.getPath('userData'), 'downloads.json'));
     registerIpc();
     const files = htmlArgs(process.argv);
     if (files.length) await launchArgs(files);

@@ -62,6 +62,10 @@ Der Name eines Programms ist der `<title>` der HTML-Datei (sonst der Dateiname) 
 
 `Esc` bleibt bewusst dem Programm überlassen (z. B. für Pausemenüs).
 
+### Downloads
+
+Lädt ein Programm eine Datei herunter, bleibt das in der App – es öffnet sich kein Browser. Die Datei landet im normalen System-Downloads-Ordner; über das Pfeil-Symbol im Menü (neben der Suche) siehst du den Verlauf, kannst einen Download öffnen, im Ordner anzeigen lassen oder löschen (entfernt auch die Datei von der Festplatte). Nur echte Web-Links (normale Seiten, keine Downloads) öffnen weiterhin im Standardbrowser.
+
 ## Gut zu wissen
 
 - **Eigener Speicher pro Programm:** `localStorage`, IndexedDB, Cookies usw. sind pro Programm getrennt und bleiben erhalten – auch wenn du ein Programm entfernst und später wieder hinzufügst (solange der Dateipfad derselbe ist).

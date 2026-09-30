@@ -29,6 +29,11 @@
         <input id="search" type="search" placeholder="Programme suchen…" autocomplete="off" spellcheck="false" aria-label="Programme suchen">
       </label>
 
+      <button id="downloads-btn" class="icon-btn top-icon-btn" type="button" title="Downloads">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <span id="downloads-badge" class="badge-dot" hidden></span>
+      </button>
+
       <button id="add" class="btn primary" type="button" title="HTML-Dateien hinzufügen (Strg+O)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         HTML hinzufügen
@@ -80,6 +85,27 @@
         <button id="modal-ok" class="btn primary" value="ok" type="submit"></button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="downloads-modal" class="modal downloads-modal">
+    <div class="modal-head">
+      <h2>Downloads</h2>
+      <button id="downloads-close" class="icon-btn" type="button" aria-label="Schließen">
+        <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <div id="downloads-list" class="downloads-list"></div>
+
+    <section id="downloads-empty" class="empty compact">
+      <h2>Noch keine Downloads</h2>
+      <p>Lädt ein Programm eine Datei herunter, taucht sie hier auf.</p>
+    </section>
+
+    <div class="modal-actions">
+      <button id="downloads-clear" class="btn danger" type="button" hidden>Alle löschen</button>
+      <button class="btn" type="button" data-close-downloads>Schließen</button>
+    </div>
   </dialog>
 
   <script src="renderer.js"></script>
