@@ -430,3 +430,17 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------------------------------------------------------------- Einstellungen */
+
+.settings-modal { width: min(560px, 92vw); max-height: 86vh; display: flex; flex-direction: column; }
+.settings-modal h3 { margin: 18px 0 4px; font-size: 14px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.set-row select { min-width: 180px; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: inherit; }
+.set-hint { margin: 0 0 10px; color: var(--muted); font-size: 12.5px; }
+.set-hint.note { color: var(--warn); margin-top: 8px; }
+.shortcut-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; }
+.shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0; }
+.key-btn { min-width: 150px; height: 32px; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px; }
+.key-btn.recording { border-color: var(--accent); color: var(--accent); }

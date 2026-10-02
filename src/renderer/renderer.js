@@ -1,7 +1,15 @@
 'use strict';
 
 const api = window.launcher;
+const I18N = window.WebcaseI18n;
 const $ = (selector) => document.querySelector(selector);
+const isMac = api.platform === 'darwin';
+
+// Sprache + Tastenkürzel (kommen aus dem Hauptprozess, Englisch ist der Standard)
+let settings = { language: 'en', shortcuts: {} };
+let t = I18N.make('en');
+const locale = () => (settings.language === 'de' ? 'de-DE' : 'en-US');
+const keyLabel = (id) => I18N.label(settings.shortcuts[id] || '', settings.language, isMac);
 
 const ICONS = {
   play: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13L19 12z"/></svg>',
@@ -66,12 +74,12 @@ function formatSize(bytes) {
     unit++;
   }
   const digits = unit === 0 || value >= 100 ? 0 : 1;
-  return `${value.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits })} ${units[unit]}`;
+  return `${value.toLocaleString(locale(), { maximumFractionDigits: digits, minimumFractionDigits: digits })} ${units[unit]}`;
 }
 
 function formatWhen(ts) {
   if (!ts) return '';
-  return new Date(ts).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+  return new Date(ts).toLocaleString(locale(), { dateStyle: 'short', timeStyle: 'short' });
 }
 
 function toast(message, kind = 'info') {
@@ -133,15 +141,15 @@ async function launch(item) {
 }
 
 async function rename(item) {
-  const name = await ask({ title: 'Umbenennen', input: item.name, confirm: 'Speichern' });
+  const name = await ask({ title: t('rename'), input: item.name, confirm: t('save') });
   if (name) await api.rename(item.id, name);
 }
 
 async function remove(item) {
   const confirmed = await ask({
-    title: 'Aus der Liste entfernen?',
-    text: `„${item.name}“ wird nur aus dem Launcher entfernt. Die Datei selbst bleibt unverändert.`,
-    confirm: 'Entfernen',
+    title: t('removeQuestion'),
+    text: t('removeText', { name: item.name }),
+    confirm: t('remove'),
     danger: true,
   });
   if (confirmed) await api.remove(item.id);
@@ -164,22 +172,22 @@ function card(item) {
     el('h3', { className: 'name', text: item.name, attrs: { title: item.name } }),
     el('p', { className: 'path', text: shortPath(item.path), attrs: { title: item.path } })
   );
-  if (item.missing) meta.append(el('span', { className: 'badge missing', text: 'Datei fehlt' }));
-  else if (running) meta.append(el('span', { className: 'badge running', text: '● Läuft' }));
+  if (item.missing) meta.append(el('span', { className: 'badge missing', text: t('fileMissing') }));
+  else if (running) meta.append(el('span', { className: 'badge running', text: t('running') }));
 
   const actions = el(
     'div',
     { className: 'actions' },
-    iconButton('edit', 'Umbenennen', () => rename(item)),
-    iconButton('folder', 'Im Ordner zeigen', () => api.reveal(item.id)),
-    iconButton('trash', 'Aus Liste entfernen', () => remove(item), 'danger')
+    iconButton('edit', t('rename'), () => rename(item)),
+    iconButton('folder', t('showInFolder'), () => api.reveal(item.id)),
+    iconButton('trash', t('removeFromList'), () => remove(item), 'danger')
   );
 
   const node = el(
     'article',
     {
       className: `card${item.missing ? ' missing' : ''}`,
-      attrs: { tabindex: 0, role: 'button', 'aria-label': `${item.name} starten` },
+      attrs: { tabindex: 0, role: 'button', 'aria-label': t('start', { name: item.name }) },
     },
     tile,
     meta,
@@ -213,10 +221,10 @@ function render() {
   const count = $('#count');
   count.hidden = empty;
   count.textContent = needle
-    ? `${visible.length} von ${state.items.length} Programmen`
+    ? t('countOf', { n: visible.length, total: state.items.length })
     : state.items.length === 1
-      ? '1 Programm'
-      : `${state.items.length} Programme`;
+      ? t('countOne')
+      : t('countMany', { n: state.items.length });
 
   $('#grid').replaceChildren(...visible.map(card));
 }
@@ -228,19 +236,19 @@ const downloadsModal = $('#downloads-modal');
 function downloadRow(entry) {
   const isActive = entry.state === 'progressing' || entry.state === 'paused';
   const isError = !isActive && (entry.missing || entry.state === 'interrupted' || entry.state === 'cancelled');
-  const progress = entry.total ? `${formatSize(entry.received) || '0 KB'} von ${formatSize(entry.total)}` : formatSize(entry.received);
+  const progress = entry.total ? t('of', { a: formatSize(entry.received) || '0 KB', b: formatSize(entry.total) }) : formatSize(entry.received);
   const statusParts = [];
   if (entry.state === 'progressing') {
-    statusParts.push(progress || 'Lädt…');
+    statusParts.push(progress || t('loading'));
     if (entry.speed > 0) statusParts.push(`${formatSize(entry.speed)}/s`);
   } else if (entry.state === 'paused') {
-    statusParts.push('Pausiert', progress);
+    statusParts.push(t('paused'), progress);
   } else if (entry.state === 'interrupted') {
-    statusParts.push('Fehlgeschlagen');
+    statusParts.push(t('failed'));
   } else if (entry.state === 'cancelled') {
-    statusParts.push('Abgebrochen');
+    statusParts.push(t('cancelled'));
   } else {
-    if (entry.missing) statusParts.push('Datei fehlt');
+    if (entry.missing) statusParts.push(t('fileMissing'));
     statusParts.push(formatSize(entry.size));
   }
   if (!isActive) statusParts.push(formatWhen(entry.completedAt || entry.startedAt));
@@ -266,17 +274,17 @@ function downloadRow(entry) {
 
   const buttons = [];
   if (entry.state === 'progressing') {
-    buttons.push(iconButton('pause', 'Pausieren', () => api.downloadAction(entry.id, 'pause')));
-    buttons.push(iconButton('cancel', 'Abbrechen', () => api.downloadAction(entry.id, 'cancel'), 'danger'));
+    buttons.push(iconButton('pause', t('pause'), () => api.downloadAction(entry.id, 'pause')));
+    buttons.push(iconButton('cancel', t('cancel'), () => api.downloadAction(entry.id, 'cancel'), 'danger'));
   } else if (entry.state === 'paused') {
-    buttons.push(iconButton('resume', 'Fortsetzen', () => api.downloadAction(entry.id, 'resume')));
-    buttons.push(iconButton('cancel', 'Abbrechen', () => api.downloadAction(entry.id, 'cancel'), 'danger'));
+    buttons.push(iconButton('resume', t('resume'), () => api.downloadAction(entry.id, 'resume')));
+    buttons.push(iconButton('cancel', t('cancel'), () => api.downloadAction(entry.id, 'cancel'), 'danger'));
   } else {
     if (entry.state === 'interrupted' || entry.state === 'cancelled') {
-      buttons.push(iconButton('retry', 'Erneut versuchen', () => api.downloadAction(entry.id, 'retry')));
+      buttons.push(iconButton('retry', t('retry'), () => api.downloadAction(entry.id, 'retry')));
     }
-    if (!entry.missing) buttons.push(iconButton('folder', 'Im Ordner zeigen', () => api.downloadAction(entry.id, 'reveal')));
-    buttons.push(iconButton('trash', 'Löschen', () => removeDownload(entry), 'danger'));
+    if (!entry.missing) buttons.push(iconButton('folder', t('showInFolder'), () => api.downloadAction(entry.id, 'reveal')));
+    buttons.push(iconButton('trash', t('delete'), () => removeDownload(entry), 'danger'));
   }
   const actions = el('div', { className: 'dl-actions' }, ...buttons);
 
@@ -286,9 +294,9 @@ function downloadRow(entry) {
 
 async function removeDownload(entry) {
   const confirmed = await ask({
-    title: 'Download löschen?',
-    text: `„${entry.filename}“ wird aus dem Verlauf entfernt und von der Festplatte gelöscht.`,
-    confirm: 'Löschen',
+    title: t('deleteDownloadQuestion'),
+    text: t('deleteDownloadText', { name: entry.filename }),
+    confirm: t('delete'),
     danger: true,
   });
   if (confirmed) await api.removeDownload(entry.id, !entry.missing && entry.state === 'completed');
@@ -311,11 +319,6 @@ $('#search').addEventListener('input', (event) => {
   render();
 });
 
-// Auf dem Mac heißt die Kürzel-Taste Cmd statt Strg
-const isMac = api.platform === 'darwin';
-const modLabel = isMac ? '⌘' : 'Strg';
-document.querySelectorAll('[data-mod]').forEach((node) => (node.textContent = modLabel));
-$('#add').title = `HTML-Dateien hinzufügen (${modLabel}+O)`;
 
 $('#downloads-btn').addEventListener('click', () => downloadsModal.showModal());
 api.onShowDownloads(() => {
@@ -326,21 +329,21 @@ $('#downloads-close').addEventListener('click', () => downloadsModal.close());
 $('[data-close-downloads]').addEventListener('click', () => downloadsModal.close());
 $('#downloads-clear').addEventListener('click', async () => {
   const confirmed = await ask({
-    title: 'Alle Downloads löschen?',
-    text: 'Der gesamte Verlauf wird geleert und alle Dateien werden von der Festplatte gelöscht.',
-    confirm: 'Alle löschen',
+    title: t('deleteAllQuestion'),
+    text: t('deleteAllText'),
+    confirm: t('deleteAll'),
     danger: true,
   });
   if (confirmed) await api.clearDownloads(true);
 });
 
 window.addEventListener('keydown', (event) => {
-  if (modal.open || downloadsModal.open) return;
-  const mod = isMac ? event.metaKey : event.ctrlKey;
-  if (mod && event.key.toLowerCase() === 'o') {
+  if (modal.open || downloadsModal.open || settingsModal.open) return;
+  const pressed = comboOf(event);
+  if (pressed && pressed === settings.shortcuts.add) {
     event.preventDefault();
     api.pick();
-  } else if (mod && event.key.toLowerCase() === 'f') {
+  } else if (pressed && pressed === settings.shortcuts.search) {
     event.preventDefault();
     $('#search').focus();
   } else if (event.key === 'Escape' && document.activeElement === $('#search')) {
@@ -378,6 +381,107 @@ api.getState().then((initial) => {
   state = initial;
   render();
 });
+
+// ---------------------------------------------------------------- Sprache + Tastenkürzel
+
+const settingsModal = $('#settings-modal');
+
+function comboOf(event) {
+  return I18N.combo(
+    { ctrl: event.ctrlKey, meta: event.metaKey, alt: event.altKey, shift: event.shiftKey, key: event.key, code: event.code },
+    isMac
+  );
+}
+
+/** Alle festen Texte der Seite in der gewählten Sprache */
+function applyTexts() {
+  document.documentElement.lang = settings.language;
+  document.querySelectorAll('[data-t]').forEach((n) => (n.textContent = t(n.dataset.t)));
+  document.querySelectorAll('[data-t-title]').forEach((n) => (n.title = t(n.dataset.tTitle)));
+  document.querySelectorAll('[data-t-placeholder]').forEach((n) => (n.placeholder = t(n.dataset.tPlaceholder)));
+  document.querySelectorAll('[data-t-aria]').forEach((n) => n.setAttribute('aria-label', t(n.dataset.tAria)));
+  const addKey = keyLabel('add');
+  $('#add').title = addKey ? t('addHtmlTitle', { key: addKey }) : t('addHtml');
+  $('#downloads-empty-text').textContent = t('noDownloadsText', { key: keyLabel('downloads') || t('none') });
+
+  // Fußzeile: die wichtigsten Tasten im Programm, mit den aktuellen Belegungen
+  const hint = $('#footer-hint');
+  hint.replaceChildren(t('inProgram'));
+  for (const [id, text] of [['fullscreen', 'hintFullscreen'], ['close', 'hintClose'], ['reload', 'hintReload'], ['devtools', 'hintDevtools']]) {
+    const key = keyLabel(id);
+    if (!key) continue;
+    hint.append(el('span', {}, el('kbd', { text: key }), ` ${t(text)}`));
+  }
+}
+
+function renderSettings() {
+  const lang = $('#language');
+  lang.replaceChildren(...Object.entries(I18N.LANGUAGES).map(([code, name]) => el('option', { text: name, attrs: { value: code } })));
+  lang.value = settings.language;
+
+  const list = $('#shortcut-list');
+  list.replaceChildren(
+    ...I18N.SHORTCUTS.map((sc) => {
+      const button = el('button', { className: 'btn key-btn', text: keyLabel(sc.id) || t('none'), attrs: { type: 'button' } });
+      button.addEventListener('click', () => recordKey(sc, button));
+      return el('div', { className: 'shortcut-row' }, el('span', { text: t(sc.label) }), button);
+    })
+  );
+}
+
+/** Nächste Tastenkombination aufnehmen: Esc bricht ab, Rücktaste entfernt die Taste */
+function recordKey(sc, button) {
+  button.textContent = t('pressKey');
+  button.classList.add('recording');
+  const onKey = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (['Control', 'Shift', 'Alt', 'Meta', 'AltGraph'].includes(event.key)) return;  // auf die "echte" Taste warten
+    window.removeEventListener('keydown', onKey, true);
+    button.classList.remove('recording');
+    const plain = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+    if (plain && event.key === 'Escape') return renderSettings();
+    const value = plain && event.key === 'Backspace' ? '' : comboOf(event);
+    const patch = { [sc.id]: value };
+    // Hatte eine andere Aktion schon diese Taste, verliert sie sie (mit Hinweis)
+    const note = $('#shortcut-note');
+    note.hidden = true;
+    if (value) {
+      for (const other of I18N.SHORTCUTS)
+        if (other.id !== sc.id && settings.shortcuts[other.id] === value) {
+          patch[other.id] = '';
+          note.textContent = t('shortcutMoved', { name: t(other.label) });
+          note.hidden = false;
+        }
+    }
+    await api.setSettings({ shortcuts: patch });
+  };
+  window.addEventListener('keydown', onKey, true);
+}
+
+function applySettings(next) {
+  settings = next;
+  t = I18N.make(settings.language);
+  applyTexts();
+  render();
+  renderDownloads();
+  if (settingsModal.open) renderSettings();
+}
+
+$('#settings-btn').addEventListener('click', () => {
+  $('#shortcut-note').hidden = true;
+  renderSettings();
+  settingsModal.showModal();
+});
+$('#settings-close').addEventListener('click', () => settingsModal.close());
+$('[data-close-settings]').addEventListener('click', () => settingsModal.close());
+$('#language').addEventListener('change', (event) => api.setSettings({ language: event.target.value }));
+$('#shortcut-reset').addEventListener('click', () => {
+  $('#shortcut-note').hidden = true;
+  api.setSettings({ resetShortcuts: true });
+});
+api.onSettings(applySettings);
+api.getSettings().then(applySettings);
 
 api.onDownloads((next) => {
   downloadsState = next;

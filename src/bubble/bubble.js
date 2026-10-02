@@ -6,7 +6,15 @@
 //   panel  - Liste der letzten Downloads dieses Programms
 
 const api = window.bubble;
+const I18N = window.WebcaseI18n;
 const $ = (selector) => document.querySelector(selector);
+const isMac = api.platform === 'darwin';
+
+// Sprache + Tastenkürzel aus den Einstellungen (Englisch ist der Standard)
+let settings = { language: 'en', shortcuts: { downloads: 'Mod+J' } };
+let t = I18N.make('en');
+const keyLabel = (id) => I18N.label(settings.shortcuts[id] || '', settings.language, isMac);
+const withKey = (text) => (keyLabel('downloads') ? `${text} (${keyLabel('downloads')})` : text);
 
 const ICONS = {
   pause: '<svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg>',
@@ -40,15 +48,16 @@ function formatBytes(bytes) {
     unit++;
   }
   const digits = unit === 0 || value >= 100 ? 0 : 1;
-  return `${value.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits })} ${units[unit]}`;
+  const locale = settings.language === 'de' ? 'de-DE' : 'en-US';
+  return `${value.toLocaleString(locale, { maximumFractionDigits: digits, minimumFractionDigits: digits })} ${units[unit]}`;
 }
 
 function formatDuration(seconds) {
   if (!Number.isFinite(seconds) || seconds <= 0) return '';
-  if (seconds < 60) return `noch ${Math.max(1, Math.round(seconds))} s`;
-  if (seconds < 3600) return `noch ${Math.round(seconds / 60)} min`;
+  if (seconds < 60) return t('remaining', { t: `${Math.max(1, Math.round(seconds))} s` });
+  if (seconds < 3600) return t('remaining', { t: `${Math.round(seconds / 60)} min` });
   const h = Math.floor(seconds / 3600);
-  return `noch ${h} h ${Math.round((seconds % 3600) / 60)} min`;
+  return t('remaining', { t: `${h} h ${Math.round((seconds % 3600) / 60)} min` });
 }
 
 function extension(filename) {
@@ -68,22 +77,22 @@ function metaText(item) {
   const state = stateOf(item);
   const total = item.total > 0 ? item.total : 0;
   if (state === 'progressing') {
-    if (item.stalled) return { text: 'Verbindung unterbrochen – wird fortgesetzt…', kind: 'error' };
-    const parts = [total ? `${formatBytes(item.received)} von ${formatBytes(total)}` : formatBytes(item.received)];
+    if (item.stalled) return { text: t('stalled'), kind: 'error' };
+    const parts = [total ? t('of', { a: formatBytes(item.received), b: formatBytes(total) }) : formatBytes(item.received)];
     if (item.speed > 0) {
       parts.push(`${formatBytes(item.speed)}/s`);
       if (total) parts.push(formatDuration((total - item.received) / item.speed));
     } else {
-      parts.push('Startet…');
+      parts.push(t('starting'));
     }
     return { text: parts.filter(Boolean).join(' · ') };
   }
   if (state === 'paused') {
-    return { text: `Pausiert · ${total ? `${formatBytes(item.received)} von ${formatBytes(total)}` : formatBytes(item.received)}` };
+    return { text: `${t('paused')} · ${total ? t('of', { a: formatBytes(item.received), b: formatBytes(total) }) : formatBytes(item.received)}` };
   }
-  if (state === 'completed') return { text: `${formatBytes(item.size || item.received)} · Fertig`, kind: 'ok' };
-  if (state === 'cancelled') return { text: 'Abgebrochen' };
-  return { text: 'Fehlgeschlagen', kind: 'error' };
+  if (state === 'completed') return { text: `${formatBytes(item.size || item.received)} · ${t('done')}`, kind: 'ok' };
+  if (state === 'cancelled') return { text: t('cancelled') };
+  return { text: t('failed'), kind: 'error' };
 }
 
 // ---------------------------------------------------------------- Aufbau
@@ -137,18 +146,18 @@ function row(item) {
 
   const actions = el('div', 'actions');
   if (state === 'progressing') {
-    actions.append(iconButton('pause', 'Pausieren', () => run(item.id, 'pause')));
-    actions.append(iconButton('cancel', 'Abbrechen', () => run(item.id, 'cancel'), 'danger'));
+    actions.append(iconButton('pause', t('pause'), () => run(item.id, 'pause')));
+    actions.append(iconButton('cancel', t('cancel'), () => run(item.id, 'cancel'), 'danger'));
   } else if (state === 'paused') {
-    actions.append(iconButton('resume', 'Fortsetzen', () => run(item.id, 'resume')));
-    actions.append(iconButton('cancel', 'Abbrechen', () => run(item.id, 'cancel'), 'danger'));
+    actions.append(iconButton('resume', t('resume'), () => run(item.id, 'resume')));
+    actions.append(iconButton('cancel', t('cancel'), () => run(item.id, 'cancel'), 'danger'));
   } else if (state === 'completed') {
-    actions.append(iconButton('folder', 'Im Ordner zeigen', () => run(item.id, 'reveal')));
+    actions.append(iconButton('folder', t('showInFolder'), () => run(item.id, 'reveal')));
     node.classList.add('openable');
-    node.title = `Öffnen: ${item.path}`;
+    node.title = `${t('open')}: ${item.path}`;
     node.addEventListener('click', () => run(item.id, 'open'));
   } else {
-    actions.append(iconButton('retry', 'Erneut versuchen', () => run(item.id, 'retry')));
+    actions.append(iconButton('retry', t('retry'), () => run(item.id, 'retry')));
   }
   node.append(actions);
   return node;
@@ -170,12 +179,12 @@ function renderFab() {
       fab.classList.add('indeterminate');
     }
     if (active.every((i) => i.state === 'paused')) fab.classList.add('paused');
-    fab.title = active.length === 1 ? `1 Download läuft (Strg+J)` : `${active.length} Downloads laufen (Strg+J)`;
+    fab.title = withKey(active.length === 1 ? t('oneDownloadRunning') : t('downloadsRunning', { n: active.length }));
   } else {
     const latest = items[0];
     if (latest && stateOf(latest) === 'completed') fab.classList.add('done');
     if (latest && stateOf(latest) === 'failed') fab.classList.add('failed');
-    fab.title = 'Downloads (Strg+J)';
+    fab.title = withKey(t('downloads'));
   }
   $('#ring').style.strokeDashoffset = String(RING * (1 - fraction));
 
@@ -273,7 +282,18 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') collapse({ returnFocus: true });
 });
 
-if (api.platform === 'darwin') $('#mod').textContent = '⌘';
+function applySettings(next) {
+  settings = next;
+  t = I18N.make(settings.language);
+  document.querySelectorAll('[data-t]').forEach((n) => (n.textContent = t(n.dataset.t)));
+  $('#close').title = t('closeEsc');
+  $('#close').setAttribute('aria-label', t('close'));
+  $('#key-hint').textContent = keyLabel('downloads');
+  $('#key-hint').hidden = !keyLabel('downloads');
+  render();
+}
+api.onSettings(applySettings);
+api.getSettings().then(applySettings);
 
 api.onState((next) => {
   items = next;

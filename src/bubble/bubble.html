@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'">
@@ -8,7 +8,7 @@
 </head>
 <body>
   <div id="root" class="root">
-    <button id="fab" class="fab" type="button" title="Downloads (Strg+J)" aria-label="Downloads" hidden>
+    <button id="fab" class="fab" type="button" aria-label="Downloads" hidden>
       <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
         <circle class="ring-track" cx="22" cy="22" r="19"/>
         <circle id="ring" class="ring-value" cx="22" cy="22" r="19"/>
@@ -19,19 +19,20 @@
 
     <section id="panel" class="panel" aria-label="Downloads" hidden>
       <header class="panel-head">
-        <h1>Downloads</h1>
-        <button id="close" class="icon-btn" type="button" title="Schließen (Esc)" aria-label="Schließen">
+        <h1 data-t="downloads">Downloads</h1>
+        <button id="close" class="icon-btn" type="button">
           <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button>
       </header>
       <div id="list" class="list"></div>
-      <p id="empty" class="empty" hidden>Noch keine Downloads in diesem Programm.</p>
+      <p id="empty" class="empty" hidden data-t="noDownloadsInProgram"></p>
       <footer class="panel-foot">
-        <button id="all" class="link" type="button">Alle Downloads anzeigen</button>
-        <span class="hint"><kbd id="mod">Strg</kbd>+<kbd>J</kbd></span>
+        <button id="all" class="link" type="button" data-t="showAllDownloads"></button>
+        <span class="hint"><kbd id="key-hint"></kbd></span>
       </footer>
     </section>
   </div>
+  <script src="../i18n.js"></script>
   <script src="bubble.js"></script>
 </body>
 </html>

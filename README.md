@@ -51,6 +51,10 @@ Der Name eines Programms ist der `<title>` der HTML-Datei (sonst der Dateiname) 
 - **Eine HTML-Datei öffnen** (Doppelklick, „Öffnen mit“, oder eine Datei auf die App-Datei ziehen): überspringt das Menü und startet diese eine Datei sofort in ihrem eigenen Fenster. Sie wird dabei automatisch der Liste hinzugefügt, falls noch nicht vorhanden. Schließt du das Programm, beendet sich die App wieder – genau wie bei einem eigenständigen Programm.
 - **Die App selbst öffnen** (Doppelklick auf die `.exe`/`.app`, ohne Datei): zeigt das Menü mit allen gespeicherten Programmen.
 
+### Sprache und Tastenkürzel
+
+Über das Zahnrad oben rechts im Menü: Sprache (Englisch ist Standard, Deutsch umschaltbar) und alle Tastenkürzel. Taste anklicken, neue Kombination drücken – Esc bricht ab, die Rücktaste entfernt die Taste. Hat eine andere Aktion die Taste schon, verliert sie sie (mit Hinweis). Die Tabelle unten zeigt die Standardbelegung.
+
 ### Tasten im laufenden Programm
 
 | Taste | Wirkung |

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:">
@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Texte kommen aus ../i18n.js (data-t = Inhalt, data-t-title / data-t-placeholder / data-t-aria = Attribute) -->
   <div class="app">
     <header class="top">
       <div class="brand">
@@ -32,17 +33,21 @@
 
       <label class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="search" type="search" placeholder="Programme suchen…" autocomplete="off" spellcheck="false" aria-label="Programme suchen">
+        <input id="search" type="search" data-t-placeholder="searchPlaceholder" data-t-aria="searchPlaceholder" autocomplete="off" spellcheck="false">
       </label>
 
-      <button id="downloads-btn" class="icon-btn top-icon-btn" type="button" title="Downloads">
+      <button id="downloads-btn" class="icon-btn top-icon-btn" type="button" data-t-title="downloads">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
         <span id="downloads-badge" class="badge-dot" hidden></span>
       </button>
 
-      <button id="add" class="btn primary" type="button" title="HTML-Dateien hinzufügen (Strg+O)">
+      <button id="settings-btn" class="icon-btn top-icon-btn" type="button" data-t-title="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+
+      <button id="add" class="btn primary" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        HTML hinzufügen
+        <span data-t="addHtml"></span>
       </button>
     </header>
 
@@ -54,29 +59,23 @@
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m10.5 12.5-1.5 1.5 1.5 1.5M13.5 12.5l1.5 1.5-1.5 1.5"/></svg>
         </div>
-        <h2>Noch keine Programme</h2>
-        <p>Füge HTML-Dateien hinzu. Der Launcher merkt sie sich und startet sie jederzeit in einem eigenen Fenster.</p>
-        <button id="empty-add" class="btn primary large" type="button">HTML-Dateien auswählen</button>
-        <p class="sub">oder Dateien einfach hierher ziehen</p>
+        <h2 data-t="noPrograms"></h2>
+        <p data-t="noProgramsText"></p>
+        <button id="empty-add" class="btn primary large" type="button" data-t="chooseHtml"></button>
+        <p class="sub" data-t="orDrop"></p>
       </section>
 
       <section id="nomatch" class="empty compact" hidden>
-        <h2>Keine Treffer</h2>
-        <p>Für diese Suche gibt es kein passendes Programm.</p>
+        <h2 data-t="noMatches"></h2>
+        <p data-t="noMatchesText"></p>
       </section>
     </main>
 
-    <footer class="hint">
-      Im Programm:
-      <span><kbd>F11</kbd> Vollbild umschalten</span>
-      <span><kbd data-mod>Strg</kbd>+<kbd>W</kbd> beenden</span>
-      <span><kbd>F5</kbd> neu laden</span>
-      <span><kbd>F12</kbd> Entwicklertools</span>
-    </footer>
+    <footer class="hint" id="footer-hint"></footer>
   </div>
 
   <div id="drop" class="drop" hidden>
-    <div>Zum Hinzufügen loslassen</div>
+    <div data-t="dropToAdd"></div>
   </div>
 
   <div id="toasts" class="toasts" aria-live="polite"></div>
@@ -87,7 +86,7 @@
       <p id="modal-text"></p>
       <input id="modal-input" type="text" maxlength="80" autocomplete="off" spellcheck="false" hidden>
       <div class="modal-actions">
-        <button class="btn" value="cancel" type="submit" formnovalidate>Abbrechen</button>
+        <button class="btn" value="cancel" type="submit" formnovalidate data-t="cancel"></button>
         <button id="modal-ok" class="btn primary" value="ok" type="submit"></button>
       </div>
     </form>
@@ -95,8 +94,8 @@
 
   <dialog id="downloads-modal" class="modal downloads-modal">
     <div class="modal-head">
-      <h2>Downloads</h2>
-      <button id="downloads-close" class="icon-btn" type="button" aria-label="Schließen">
+      <h2 data-t="downloads"></h2>
+      <button id="downloads-close" class="icon-btn" type="button" data-t-aria="close">
         <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
       </button>
     </div>
@@ -104,16 +103,41 @@
     <div id="downloads-list" class="downloads-list"></div>
 
     <section id="downloads-empty" class="empty compact">
-      <h2>Noch keine Downloads</h2>
-      <p>Lädt ein Programm eine Datei herunter, taucht sie hier auf. Im Programm selbst öffnet <kbd data-mod>Strg</kbd>+<kbd>J</kbd> die Download-Liste.</p>
+      <h2 data-t="noDownloads"></h2>
+      <p id="downloads-empty-text"></p>
     </section>
 
     <div class="modal-actions">
-      <button id="downloads-clear" class="btn danger" type="button" hidden>Alle löschen</button>
-      <button class="btn" type="button" data-close-downloads>Schließen</button>
+      <button id="downloads-clear" class="btn danger" type="button" hidden data-t="deleteAll"></button>
+      <button class="btn" type="button" data-close-downloads data-t="close"></button>
     </div>
   </dialog>
 
+  <dialog id="settings-modal" class="modal settings-modal">
+    <div class="modal-head">
+      <h2 data-t="settings"></h2>
+      <button id="settings-close" class="icon-btn" type="button" data-t-aria="close">
+        <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <label class="set-row">
+      <span data-t="language"></span>
+      <select id="language"></select>
+    </label>
+
+    <h3 data-t="shortcuts"></h3>
+    <p class="set-hint" data-t="shortcutsHint"></p>
+    <div id="shortcut-list" class="shortcut-list"></div>
+    <p id="shortcut-note" class="set-hint note" hidden></p>
+
+    <div class="modal-actions">
+      <button id="shortcut-reset" class="btn" type="button" data-t="restoreDefaults"></button>
+      <button class="btn primary" type="button" data-close-settings data-t="close"></button>
+    </div>
+  </dialog>
+
+  <script src="../i18n.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

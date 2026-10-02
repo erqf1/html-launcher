@@ -7,6 +7,8 @@ const { pathToFileURL } = require('url');
 const { Library, isHtmlFile, idFor } = require('./store');
 const { Downloads } = require('./downloads');
 const { DownloadManager } = require('./download-manager');
+const { Settings } = require('./settings');
+const i18n = require('./i18n');
 
 const ICON = path.join(__dirname, '..', 'assets', 'icon.png');
 const PRELOAD = path.join(__dirname, 'preload.js');
@@ -15,6 +17,9 @@ const LAUNCHER_PAGE = path.join(__dirname, 'renderer', 'index.html');
 let library;
 let downloads;
 let downloadManager;
+let settings;
+let t = i18n.make('en');  // Übersetzer für die gewählte Sprache
+const isMac = process.platform === 'darwin';
 let launcherWin = null;
 const programWins = new Map(); // id -> BrowserWindow
 const launching = new Set(); // ids, die gerade starten (gegen Doppelklick)
@@ -86,9 +91,9 @@ async function addPaths(paths) {
   const { added, duplicates } = await library.add(valid);
 
   const parts = [];
-  if (added) parts.push(added === 1 ? '1 Programm hinzugefügt' : `${added} Programme hinzugefügt`);
-  if (duplicates) parts.push(`${duplicates}× schon vorhanden`);
-  if (rejected) parts.push(`${rejected}× keine HTML-Datei`);
+  if (added) parts.push(added === 1 ? t('addedOne') : t('addedMany', { n: added }));
+  if (duplicates) parts.push(t('alreadyThere', { n: duplicates }));
+  if (rejected) parts.push(t('notHtml', { n: rejected }));
   if (parts.length) toast(parts.join(' · '), added ? 'ok' : 'warn');
 
   await broadcast();
@@ -111,7 +116,7 @@ async function launchArgs(files) {
 
   if (!valid.length) {
     showLauncher();
-    if (files.length) await notify('Das ist keine HTML-Datei.', 'warn');
+    if (files.length) await notify(t('notHtmlFile'), 'warn');
     return;
   }
 
@@ -132,7 +137,7 @@ async function launchArgs(files) {
 
 async function launch(id) {
   const item = library.find(id);
-  if (!item) return { ok: false, error: 'Eintrag nicht gefunden.' };
+  if (!item) return { ok: false, error: t('entryNotFound') };
 
   const open = programWins.get(id);
   if (open && !open.isDestroyed()) {
@@ -146,7 +151,7 @@ async function launch(id) {
   try {
     if (!(await exists(item.path))) {
       await broadcast();
-      return { ok: false, error: 'Die Datei wurde nicht gefunden. Wurde sie verschoben oder gelöscht?' };
+      return { ok: false, error: t('fileNotFound') };
     }
 
     const win = new BrowserWindow({
@@ -224,28 +229,39 @@ function attachProgramBehavior(win, originalUrl, programId) {
   downloadManager.wire(programId, webContents.session);
   downloadManager.prepare(programId);
 
-  // Esc bleibt bewusst dem Programm überlassen (Pausemenüs usw.).
+  // Tastenkürzel aus den Einstellungen; Esc bleibt bewusst dem Programm überlassen (Pausemenüs usw.).
   webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown') return;
-    const ctrl = input.control || input.meta;
-    const key = input.key.toLowerCase();
-
-    if (input.key === 'F11') {
-      win.setFullScreen(!win.isFullScreen());
-    } else if (ctrl && !input.alt && !input.shift && key === 'w') {
-      win.close();
-    } else if (input.key === 'F5' || (ctrl && !input.alt && key === 'r')) {
-      if (input.shift) webContents.reloadIgnoringCache();
-      else webContents.reload();
-    } else if (input.key === 'F12' || (ctrl && input.shift && key === 'i')) {
-      webContents.toggleDevTools();
-    } else if (ctrl && !input.alt && !input.shift && key === 'j') {
-      downloadManager.open(programId, 'toggle');
-    } else {
-      return;
-    }
+    const action = programShortcut(input);
+    if (action === 'fullscreen') win.setFullScreen(!win.isFullScreen());
+    else if (action === 'close') win.close();
+    else if (action === 'reload') webContents.reload();
+    else if (action === 'hardReload') webContents.reloadIgnoringCache();
+    else if (action === 'devtools') webContents.toggleDevTools();
+    else if (action === 'downloads') downloadManager.open(programId, 'toggle');
+    else return;
     event.preventDefault();
   });
+}
+
+/** Welche Aktion löst diese Taste im Programmfenster aus? (null = keine, dann bekommt sie das Programm) */
+function programShortcut(input) {
+  const pressed = i18n.combo(
+    { ctrl: input.control, meta: input.meta, alt: input.alt, shift: input.shift, key: input.key, code: input.code },
+    isMac
+  );
+  if (!pressed) return null;
+  const sc = settings.shortcuts();
+  for (const id of ['fullscreen', 'close', 'reload', 'hardReload', 'devtools', 'downloads'])
+    if (sc[id] && sc[id] === pressed) return id;
+  // Gewohnte Zweitbelegungen, solange die Standardtasten gelten
+  if (sc.reload === 'F5' && pressed === 'Mod+R') return 'reload';
+  if (sc.devtools === 'F12' && pressed === 'Mod+Shift+I') return 'devtools';
+  return null;
+}
+
+function settingsState() {
+  return { language: settings.language, shortcuts: settings.shortcuts(), platform: process.platform };
 }
 
 // ---------------------------------------------------------------- Launcher-Fenster
@@ -293,9 +309,9 @@ function registerIpc() {
 
   ipcMain.handle('library:pick', async () => {
     const result = await dialog.showOpenDialog(launcherWin, {
-      title: 'HTML-Dateien hinzufügen',
+      title: t('addHtmlDialog'),
       properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'HTML-Dateien', extensions: ['html', 'htm'] }],
+      filters: [{ name: t('htmlFiles'), extensions: ['html', 'htm'] }],
     });
     if (!result.canceled) await addPaths(result.filePaths);
   });
@@ -335,6 +351,18 @@ function registerIpc() {
 
   ipcMain.handle('downloads:clear', async (_event, deleteFiles) => {
     downloadManager.clear(!!deleteFiles);
+  });
+
+  // Sprache + Tastenkürzel
+  ipcMain.handle('settings:get', settingsState);
+  ipcMain.handle('settings:set', (_event, patch) => {
+    if (!patch || typeof patch !== 'object') return settingsState();
+    settings.set(patch);
+    t = i18n.make(settings.language);
+    const state = settingsState();
+    send('settings:changed', state);
+    downloadManager.settingsChanged(state);
+    return state;
   });
 }
 
@@ -377,12 +405,12 @@ function setupAutoUpdate() {
     const parent = launcherWin && !launcherWin.isDestroyed() ? launcherWin : BrowserWindow.getFocusedWindow();
     const options = {
       type: 'info',
-      buttons: ['Jetzt neu starten', 'Später'],
+      buttons: [t('restartNow'), t('later')],
       defaultId: 0,
       cancelId: 1,
-      title: 'Webcase-Update',
-      message: `Webcase ${info.version} ist bereit.`,
-      detail: 'Jetzt neu starten, um das Update zu installieren? Sonst wird es beim nächsten Beenden von selbst installiert.',
+      title: t('updateTitle'),
+      message: t('updateReady', { version: info.version }),
+      detail: t('updateDetail'),
     };
     const { response } = parent ? await dialog.showMessageBox(parent, options) : await dialog.showMessageBox(options);
     asking = false;
@@ -426,6 +454,8 @@ if (!app.requestSingleInstanceLock()) {
           ])
         : null
     );
+    settings = new Settings(path.join(app.getPath('userData'), 'settings.json'));
+    t = i18n.make(settings.language);
     library = new Library(path.join(app.getPath('userData'), 'library.json'));
     downloads = new Downloads(path.join(app.getPath('userData'), 'downloads.json'));
     downloadManager = new DownloadManager({
@@ -433,6 +463,9 @@ if (!app.requestSingleInstanceLock()) {
       getProgramWindow: (id) => programWins.get(id),
       onChange: broadcastDownloads,
       onToast: toast,
+      t: (...args) => t(...args),
+      shortcut: (input) => programShortcut(input),
+      settings: () => settingsState(),
       showAll: async () => {
         showLauncher();
         if (launcherWin.webContents.isLoading()) {

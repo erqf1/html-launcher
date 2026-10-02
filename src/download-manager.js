@@ -23,7 +23,10 @@ class DownloadManager {
    * @param {(message: string, kind: string) => void} opts.onToast
    * @param {() => void} opts.showAll    Launcher mit geöffneter Download-Liste zeigen
    */
-  constructor({ downloads, getProgramWindow, onChange, onToast, showAll }) {
+  constructor({ downloads, getProgramWindow, onChange, onToast, showAll, t, shortcut, settings }) {
+    this.t = t;                // Übersetzer (aktuelle Sprache)
+    this.shortcut = shortcut;  // Taste -> Aktion (wie im Programmfenster)
+    this.settings = settings;  // Sprache/Tastenkürzel für die Blase
     this.downloads = downloads;
     this.getProgramWindow = getProgramWindow;
     this.onChange = onChange;
@@ -90,16 +93,16 @@ class DownloadManager {
       this._changed(programId, true);
       if (state === 'completed') {
         this.open(programId, 'done');
-        this.onToast(`Download abgeschlossen: ${filename}`, 'ok');
+        this.onToast(this.t('downloadDone', { name: filename }), 'ok');
       } else if (state === 'interrupted') {
         this.open(programId, 'done');
-        this.onToast(`Download fehlgeschlagen: ${filename}`, 'error');
+        this.onToast(this.t('downloadFailed', { name: filename }), 'error');
       }
     });
 
     this._changed(programId, true);
     this.open(programId, 'start');
-    this.onToast(`Download gestartet: ${filename}`, 'info');
+    this.onToast(this.t('downloadStarted', { name: filename }), 'info');
   }
 
   // ---------------------------------------------------------------- Zustand
@@ -175,7 +178,7 @@ class DownloadManager {
   /** Gemeinsam für Blase und Launcher. Liefert eine Fehlermeldung oder null. */
   async action(entryId, action) {
     const entry = this.downloads.find(entryId);
-    if (!entry) return 'Eintrag nicht gefunden.';
+    if (!entry) return this.t('entryNotFound');
     const live = this.live.get(entryId);
 
     switch (action) {
@@ -194,7 +197,7 @@ class DownloadManager {
           break;
         }
         if (!entry.programId || !/^(https?|file):/i.test(entry.url)) {
-          return 'Dieser Download lässt sich nicht erneut starten. Starte ihn im Programm noch einmal.';
+          return this.t('cantRetry');
         }
         this.downloads.remove(entryId);
         session.fromPartition(`persist:app-${entry.programId}`).downloadURL(entry.url);
@@ -202,7 +205,7 @@ class DownloadManager {
       }
       case 'open': {
         const error = await shell.openPath(entry.path);
-        if (error) return 'Datei konnte nicht geöffnet werden. Wurde sie verschoben oder gelöscht?';
+        if (error) return this.t('cantOpen');
         break;
       }
       case 'reveal':
@@ -270,11 +273,10 @@ class DownloadManager {
     webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     webContents.on('before-input-event', (event, input) => {
       if (input.type !== 'keyDown') return;
-      const ctrl = input.control || input.meta;
-      const key = input.key.toLowerCase();
-      if (ctrl && !input.alt && !input.shift && key === 'j') this.open(programId, 'toggle');
-      else if (ctrl && !input.alt && !input.shift && key === 'w') win.close();
-      else if (input.key === 'F11') win.setFullScreen(!win.isFullScreen());
+      const action = this.shortcut(input);
+      if (action === 'downloads') this.open(programId, 'toggle');
+      else if (action === 'close') win.close();
+      else if (action === 'fullscreen') win.setFullScreen(!win.isFullScreen());
       else return;
       event.preventDefault();
     });
@@ -311,12 +313,19 @@ class DownloadManager {
     bubble.view.setBounds({ x: Math.max(0, winWidth - width - MARGIN), y: MARGIN, width, height });
   }
 
+  /** Sprache/Tastenkürzel geändert: alle Blasen neu beschriften */
+  settingsChanged(state) {
+    for (const bubble of this.bubbles.values()) this._send(bubble, 'bubble:settings', state);
+  }
+
   _bubbleFor(sender) {
     for (const bubble of this.bubbles.values()) if (bubble.view.webContents === sender) return bubble;
     return null;
   }
 
   _registerIpc() {
+    ipcMain.handle('bubble:settings', () => this.settings());
+
     ipcMain.handle('bubble:get', (event) => {
       const bubble = this._bubbleFor(event.sender);
       return bubble ? this.itemsFor(bubble.programId) : [];
@@ -335,7 +344,7 @@ class DownloadManager {
       const bubble = this._bubbleFor(event.sender);
       const entry = this.downloads.find(String(entryId));
       // Die Blase eines Programms darf nur dessen eigene Downloads steuern.
-      if (!bubble || !entry || entry.programId !== bubble.programId) return 'Eintrag nicht gefunden.';
+      if (!bubble || !entry || entry.programId !== bubble.programId) return this.t('entryNotFound');
       return this.action(entry.id, String(action));
     });
 
