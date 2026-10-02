@@ -16,11 +16,11 @@ Bei der Windows-Installation lässt sich der Zielordner frei wählen (Assistent,
 
 ### Linux
 
-`.deb` und `.pacman` installieren sich wie gewohnt über den Paketmanager der Distribution. Bei `.tar.gz`: entpacken, dann `./Webcase` ausführen. Startet die App mit einer Meldung zum „SUID sandbox helper“ nicht (z. B. Ubuntu 24.04+):
+`.deb` und `.pacman` installieren sich wie gewohnt über den Paketmanager der Distribution. Bei `.tar.gz`: entpacken, dann `./webcase` ausführen. Startet die App mit einer Meldung zum „SUID sandbox helper“ nicht (z. B. Ubuntu 24.04+):
 
 ```bash
 sudo chown root:root chrome-sandbox && sudo chmod 4755 chrome-sandbox   # empfohlen
-./Webcase --no-sandbox                                                  # Notlösung, schwächere Isolation
+./webcase --no-sandbox                                                  # Notlösung, schwächere Isolation
 ```
 
 ### macOS
